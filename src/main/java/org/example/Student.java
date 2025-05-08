@@ -7,7 +7,7 @@ import java.sql.*;
 public class Student extends User {
     JFrame frame;
 
-    String password, name, contact, email, admissionDate, academicStatus;
+    String password, name, contact, email, admissionDate, academicStatus, faculty, department;
 
     public Student(String id) {
         super(id);
@@ -17,7 +17,7 @@ public class Student extends User {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-            String query = "SELECT name, password, contact, email ,admissionDate , academicStatus, FROM students WHERE id='" + id + "'";
+            String query = "SELECT name, password, contact, email ,admissionDate , academicStatus, faculty, department, FROM students WHERE id='" + id + "'";
 
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
@@ -29,6 +29,8 @@ public class Student extends User {
                 email = rs.getString("email");
                 admissionDate = rs.getString("admissionDate");
                 academicStatus = rs.getString("academicStatus");
+                faculty = rs.getString("faculty");
+                department = rs.getString("department");
             }
 
             rs.close();
@@ -99,7 +101,7 @@ public class Student extends User {
     }
 
 
-    public void registerForCourse(String id) {
+    private void registerForCourse(String id) {
         frame = Frame.basicFrame("Register for Courses", 600, 600, false);
 
         JLabel titleLabel = new JLabel("Select Courses to Register:");
@@ -179,7 +181,7 @@ public class Student extends User {
     }
 
 
-    public void dropCourse(String id) {
+    private void dropCourse(String id) {
         frame = Frame.basicFrame("Drop Courses", 600, 600, false);
 
         JLabel titleLabel = new JLabel("Select Courses to Drop:");
@@ -249,7 +251,7 @@ public class Student extends User {
     }
 
 
-    public void viewGrades(String id) {
+    private void viewGrades(String id) {
         frame = Frame.basicFrame("View Grades", 650, 600, false);
 
         JLabel titleLabel = new JLabel("Your Registered Courses and Grades:");
@@ -297,7 +299,7 @@ public class Student extends User {
     }
 
 
-    public void calculateGPA(String id) {
+    private void calculateGPA(String id) {
         frame = Frame.basicFrame("Your GPA", 400, 200, false);
 
         try {

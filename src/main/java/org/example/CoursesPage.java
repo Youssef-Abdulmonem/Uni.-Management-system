@@ -2,7 +2,7 @@ package org.example;
 
 import javax.swing.*;
 import java.sql.*;
-
+// Not used (only for testing)
 public class CoursesPage {
     JFrame frame;
 

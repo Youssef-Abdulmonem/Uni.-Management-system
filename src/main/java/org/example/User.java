@@ -5,7 +5,7 @@ import java.awt.*;
 import java.sql.*;
 
 public abstract class User {
-    public String id;
+    protected String id;
     JFrame frame;
 
     public User(String id) {
