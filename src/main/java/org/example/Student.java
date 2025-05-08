@@ -7,7 +7,7 @@ import java.sql.*;
 public class Student extends User {
     JFrame frame;
 
-    String name, password, contact, email;
+    String password, name, contact, email, admissionDate, academicStatus;
 
     public Student(String id) {
         super(id);
@@ -17,7 +17,7 @@ public class Student extends User {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-            String query = "SELECT name, password, contact, email FROM students WHERE id='" + id + "'";
+            String query = "SELECT name, password, contact, email ,admissionDate , academicStatus, FROM students WHERE id='" + id + "'";
 
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
@@ -27,6 +27,8 @@ public class Student extends User {
                 password = rs.getString("password");
                 contact = rs.getString("contact");
                 email = rs.getString("email");
+                admissionDate = rs.getString("admissionDate");
+                academicStatus = rs.getString("academicStatus");
             }
 
             rs.close();
