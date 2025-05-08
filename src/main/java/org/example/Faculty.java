@@ -93,6 +93,6 @@ public class Faculty extends User {
 
     }
     private void assignGrades(JFrame frame) {
-        
+
     }
 }
