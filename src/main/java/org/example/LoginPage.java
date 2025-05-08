@@ -42,6 +42,8 @@ public class LoginPage {
 
                     if (id.startsWith("st")) {
                         new Student(id);
+                    } else if (id.startsWith("F")) {
+                        new Faculty(id);
                     }
 
                 } else {
@@ -56,16 +58,29 @@ public class LoginPage {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
             Statement stmt = conn.createStatement();
-            String query = "SELECT * FROM students WHERE id='" + id + "' AND password='" + pass + "'";
-            ResultSet rs = stmt.executeQuery(query);
-            boolean result = rs.next();
-            rs.close();
+
+            String studentQuery = "SELECT * FROM students WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet studentRs = stmt.executeQuery(studentQuery);
+            if (studentRs.next()) {
+                studentRs.close();
+                stmt.close();
+                conn.close();
+                return true;
+            }
+            studentRs.close();
+
+            String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet facultyRs = stmt.executeQuery(facultyQuery);
+            boolean result = facultyRs.next();
+            facultyRs.close();
             stmt.close();
             conn.close();
             return result;
+
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
+
 }
