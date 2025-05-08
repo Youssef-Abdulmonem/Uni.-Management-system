@@ -14,6 +14,7 @@ public class Student extends User {
 
         frame = Frame.basicFrame("Student Page", 800, 700, true);
 
+
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 

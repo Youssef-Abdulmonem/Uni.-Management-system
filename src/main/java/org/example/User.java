@@ -80,6 +80,7 @@ public abstract class User {
                 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                      Statement stmt = conn.createStatement()) {
                     stmt.executeUpdate("UPDATE students SET " + field + "='" + newValue + "' WHERE id='" + id + "'");
+
                     JOptionPane.showMessageDialog(updateFrame, field + " updated successfully!");
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -97,13 +98,15 @@ public abstract class User {
         String value = "";
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
              Statement stmt = conn.createStatement();
+
+
              ResultSet rs = stmt.executeQuery("SELECT " + field + " FROM students WHERE id='" + id + "'")) {
-            if (rs.next()) {
-                value = rs.getString(field);
+                if (rs.next()) {
+                    value = rs.getString(field);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return value;
     }
 

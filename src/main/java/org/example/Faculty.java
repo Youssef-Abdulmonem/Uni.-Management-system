@@ -17,7 +17,7 @@ public class Faculty extends User {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-            String query = "SELECT name, password, contact, email , expertise , FROM faculties WHERE id='" + id + "'";
+            String query = "SELECT name, password, contact, email , expertise FROM faculties WHERE id='" + id + "'";
 
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
@@ -44,6 +44,7 @@ public class Faculty extends User {
         JButton manageCourses = new JButton("Manage Courses");
         JButton setOfficeHours = new JButton("Set Office Hours");
         JButton generateReports = new JButton("Generate Reports");
+
         assignGrades.setBounds(50, 100, 200, 30);
         manageCourses.setBounds(50, 150, 200, 30);
         setOfficeHours.setBounds(50, 200, 200, 30);
@@ -63,7 +64,7 @@ public class Faculty extends User {
         assignGrades.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //
+                assignGrades(id);
             }
         });
 
@@ -92,6 +93,7 @@ public class Faculty extends User {
         frame.setVisible(true);
 
     }
+
     private void assignGrades(String id) {
         frame = Frame.basicFrame("Assign Grades", 800, 700, false);
 
@@ -129,7 +131,7 @@ public class Faculty extends User {
                     try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
                          Statement stm = con.createStatement()) {
 
-                        String studentQuery = "SELECT student_id FROM student_courses WHERE course_id = '" + finalCourseID + "'";
+                        String studentQuery = "SELECT student_id FROM student_courses WHERE course_id = '" + finalCourseID + "' AND status = 'Registered'";
                         ResultSet studentRs = stm.executeQuery(studentQuery);
 
                         int yPos = 30;
@@ -155,6 +157,18 @@ public class Faculty extends User {
                             gradesFrame.add(studentLabel);
 
                             JTextField gradeField = new JTextField();
+                            gradeField.setInputVerifier(new InputVerifier() {
+                                @Override
+                                public boolean verify(JComponent input) {
+                                    try {
+                                        Double.parseDouble(gradeField.getText());  // Try converting to double
+                                        return true;  // Valid double
+                                    } catch (NumberFormatException e) {
+                                        JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
+                                        return false;  // Invalid input
+                                    }
+                                }
+                            });
                             gradeField.setBounds(280, yPos, 80, 25);
                             gradesFrame.add(gradeField);
 
@@ -170,8 +184,7 @@ public class Faculty extends User {
                             try (Connection saveConn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
                                 for (int i = 0; i < studentIds.size(); i++) {
                                     String studentId = studentIds.get(i);
-                                    String grade = gradeFields.get(i).getText();
-
+                                    double grade = Double.parseDouble(gradeFields.get(i).getText());
                                     String updateQuery = "UPDATE student_courses SET grade = '" + grade + "' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
                                     try (Statement updateStmt = saveConn.createStatement()) {
                                         updateStmt.executeUpdate(updateQuery);
@@ -185,7 +198,6 @@ public class Faculty extends User {
                         });
 
                         gradesFrame.setVisible(true);
-
                     } catch (SQLException ex) {
                         ex.printStackTrace();
                     }
@@ -196,7 +208,6 @@ public class Faculty extends User {
                 courseRs.close();
                 courseStmt.close();
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
