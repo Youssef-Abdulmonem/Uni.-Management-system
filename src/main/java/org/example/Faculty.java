@@ -191,8 +191,8 @@ public class Faculty extends User {
                                 for (int i = 0; i < studentIds.size(); i++) {
                                     String studentId = studentIds.get(i);
                                     String gradeText = gradeFields.get(i).getText();
-
                                     double grade;
+
                                     try {
                                         grade = Double.parseDouble(gradeText);
                                         if (grade < 0 || grade > 100) {
@@ -200,7 +200,7 @@ public class Faculty extends User {
                                         }
                                     } catch (NumberFormatException ex) {
                                         JOptionPane.showMessageDialog(gradesFrame,
-                                                "Invalid grade entered for student ID: " + studentId + ". Please enter a valid number.",
+                                                "Invalid grade entered for student ID: " + studentId + ". Please enter a grade between 0 and 100.",
                                                 "Input Error", JOptionPane.ERROR_MESSAGE);
                                         return;
                                     }
@@ -599,8 +599,8 @@ public class Faculty extends User {
         drButton.setBounds(130, 60, 100, 30);
         frame.add(drButton);
 
-        JButton taButton = new JButton("Teachers Assistant");
-        taButton.setBounds(130, 100, 200, 30);
+        JButton taButton = new JButton("TAs");
+        taButton.setBounds(130, 100, 100, 30);
         frame.add(taButton);
 
 
@@ -644,6 +644,21 @@ public class Faculty extends User {
                 roleFrame.add(saveButton);
 
                 saveButton.addActionListener(saveEvent -> {
+                    for (JTextField field : fields) {
+                        String hoursText = field.getText();
+                        int hoursInput;
+                        try {
+                            hoursInput = Integer.parseInt(hoursText);
+                            if (hoursInput < 0 || hoursInput > 72) {
+                                throw new NumberFormatException();
+                            }
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(roleFrame,
+                                    "Invalid office hours entered for staff ID: " + field.getName() + ". Please enter office hours between 0 and 72.",
+                                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    }
                     try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
                          Statement updateStmt = updateCon.createStatement()) {
 
@@ -714,6 +729,21 @@ public class Faculty extends User {
                 roleFrame.add(saveButton);
 
                 saveButton.addActionListener(saveEvent -> {
+                    for (JTextField field : fields) {
+                        String hoursText = field.getText();
+                        int hoursInput;
+                        try {
+                            hoursInput = Integer.parseInt(hoursText);
+                            if (hoursInput < 0 || hoursInput > 72) {
+                                throw new NumberFormatException();
+                            }
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(roleFrame,
+                                    "Invalid office hours entered for staff ID: " + field.getName() + ". Please enter office hours between 0 and 72.",
+                                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    }
                     try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
                          Statement updateStmt = updateCon.createStatement()) {
 
