@@ -155,9 +155,25 @@ public class Faculty extends User {
                             studentLabel.setBounds(30, yPos, 250, 25);
                             gradesFrame.add(studentLabel);
 
-                            JTextField gradeField = new JTextField();
+                            String grade = "";
+                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
+                            try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                                 Statement gradeStmt = gradeConn.createStatement();
+                                 ResultSet gradeRs = gradeStmt.executeQuery(gradeQuery)) {
+                                if (gradeRs.next()) {
+                                    grade = gradeRs.getString("grade");
+                                } else {
+                                    grade = "N/A";
+                                    System.out.println("No grade found for studentId: " + studentId + ", courseId: " + finalCourseID);
+                                }
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                            }
+
+                            JTextField gradeField = new JTextField(grade);
                             gradeField.setBounds(280, yPos, 80, 25);
                             gradesFrame.add(gradeField);
+
 
                             gradeFields.add(gradeField);
                             yPos += 40;
@@ -171,7 +187,20 @@ public class Faculty extends User {
                             try (Connection saveConn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
                                 for (int i = 0; i < studentIds.size(); i++) {
                                     String studentId = studentIds.get(i);
-                                    String grade = gradeFields.get(i).getText();
+                                    String gradeText = gradeFields.get(i).getText();
+
+                                    double grade;
+                                    try {
+                                        grade = Double.parseDouble(gradeText);
+                                        if (grade < 0 || grade > 100) {
+                                            throw new NumberFormatException();
+                                        }
+                                    } catch (NumberFormatException ex) {
+                                        JOptionPane.showMessageDialog(gradesFrame,
+                                                "Invalid grade entered for student ID: " + studentId + ". Please enter a valid number.",
+                                                "Input Error", JOptionPane.ERROR_MESSAGE);
+                                        return;
+                                    }
 
                                     String updateQuery = "UPDATE student_courses SET grade = '" + grade
                                             + "' WHERE student_id = '" + studentId + "' AND course_id = '"
@@ -180,6 +209,7 @@ public class Faculty extends User {
                                         updateStmt.executeUpdate(updateQuery);
                                     }
                                 }
+
                                 JOptionPane.showMessageDialog(gradesFrame, "Grades saved successfully!");
                                 gradesFrame.dispose();
                             } catch (SQLException ex) {
