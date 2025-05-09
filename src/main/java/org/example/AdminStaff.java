@@ -162,7 +162,8 @@ public class AdminStaff extends User {
                                 JOptionPane.showMessageDialog(null, "Student must complete prerequisite course before registering for this course.");
                                 return;
                             }
-                        } catch (SQLException ex) {}
+                        } catch (SQLException ex) {
+                        }
                     }
                 }
 
@@ -280,7 +281,62 @@ public class AdminStaff extends User {
     }
 
     private void assignFaculty(String id) {
+        JFrame assignFrame = Frame.basicFrame("Assign Faculty", 400, 300, false);
 
+        JLabel facultyLabel = new JLabel("Faculty:");
+        JTextField facultyField = new JTextField();
+
+        JButton saveButton = new JButton("Save");
+
+        facultyLabel.setBounds(30, 50, 120, 25);
+        facultyField.setBounds(150, 50, 200, 25);
+
+        saveButton.setBounds(150, 100, 100, 30);
+
+        assignFrame.add(facultyLabel);
+        assignFrame.add(facultyField);
+
+        assignFrame.add(saveButton);
+
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            String query = "SELECT faculty FROM adminstaff WHERE id='" + id + "'";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            if (rs.next()) {
+                String currentFaculty = rs.getString("faculty");
+                facultyField.setText(currentFaculty);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(assignFrame, "Failed to fetch data.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        saveButton.addActionListener(e -> {
+            String newFaculty = facultyField.getText();
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 Statement stmt = conn.createStatement()) {
+
+                String updateQuery = "UPDATE adminstaff SET faculty = '" + newFaculty + "' WHERE id = '" + id + "'";
+                stmt.executeUpdate(updateQuery);
+
+                JOptionPane.showMessageDialog(assignFrame, "Faculty updated successfully.");
+                assignFrame.dispose();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(assignFrame, "Failed to update faculty.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+
+        assignFrame.setVisible(true);
     }
 
     private void generateReports(String id) {
