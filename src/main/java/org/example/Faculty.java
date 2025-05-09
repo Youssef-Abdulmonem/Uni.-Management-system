@@ -3,7 +3,6 @@ package org.example;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.rmi.server.ExportException;
 
 import java.sql.*;
 
@@ -77,7 +76,7 @@ public class Faculty extends User {
         setOfficeHours.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //
+                setOfficeHours(id);
             }
         });
 
@@ -236,5 +235,73 @@ public class Faculty extends User {
 
         frame.setVisible(true);
     }
+
+    private void setOfficeHours(String id) {
+        JFrame frame = Frame.basicFrame("Set Office Hours", 800, 700, false);
+        frame.setLayout(null);
+
+        JLabel label = new JLabel("Set staff office hours here:");
+        label.setBounds(10, 10, 250, 30);
+        frame.add(label);
+
+        try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+            String facultyName = getFacultyName(id);
+            String role = "TA";
+            String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = ? AND role = ?";
+            try (PreparedStatement ps = con.prepareStatement(query)) {
+                ps.setString(1, facultyName);
+                ps.setString(2, role);
+
+                ResultSet rs = ps.executeQuery();
+
+                int yPosition = 50;
+                while (rs.next()) {
+                    String staffId = rs.getString("id");
+                    String name = rs.getString("name");
+                    String department = rs.getString("department");
+                    int hours = rs.getInt("officeHours");
+
+                    JLabel staffLabel = new JLabel("Name: " + name + ", ID: " + staffId + ", Department: " + department + ", Office Hours: ");
+                    staffLabel.setBounds(10, yPosition, 450, 30);
+
+                    JTextField hoursField = new JTextField(String.valueOf(hours), 5);
+                    hoursField.setBounds(400, yPosition+4, 60, 25);
+                    hoursField.setName(staffId);
+
+                    yPosition += 40;
+
+                    frame.add(staffLabel);
+                    frame.add(hoursField);
+                }
+            }
+            role = "Doctor";
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        frame.setVisible(true);
+    }
+
+    private String getFacultyName(String facultyId) {
+        String facultyName = "";
+        try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+            String query = "SELECT name FROM faculties WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(query)) {
+                ps.setString(1, facultyId);
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next()) {
+                    facultyName = rs.getString("name");
+                }
+                rs.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return facultyName;
+    }
+
 
 }
