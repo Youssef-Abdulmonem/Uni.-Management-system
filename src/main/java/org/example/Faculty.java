@@ -240,7 +240,7 @@ public class Faculty extends User {
         frame.setVisible(true);
     }
 
-    private void manageCourse(String facultyId) {
+    private void manageCourse(String id) {
         JFrame frame = Frame.basicFrame("Manage Courses", 800, 700, false);
 
         JLabel titleLabel = new JLabel("Manage Courses");
@@ -271,7 +271,7 @@ public class Faculty extends User {
 
                 // Get unique course IDs
                 Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -349,7 +349,7 @@ public class Faculty extends User {
 
                 // Get unique course IDs
                 Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -430,7 +430,7 @@ public class Faculty extends User {
 
                 // Get unique course IDs
                 Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -512,7 +512,7 @@ public class Faculty extends User {
 
                 // Get unique course IDs
                 Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -600,11 +600,10 @@ public class Faculty extends User {
 
         try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
             String facultyName = getFacultyName(id);
-            String role = "TA";
             String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = ? AND role = ?";
             try (PreparedStatement ps = con.prepareStatement(query)) {
                 ps.setString(1, facultyName);
-                ps.setString(2, role);
+                ps.setString(2, "TA");
 
                 ResultSet rs = ps.executeQuery();
 
@@ -628,7 +627,6 @@ public class Faculty extends User {
                     frame.add(hoursField);
                 }
             }
-            role = "Doctor";
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -638,12 +636,15 @@ public class Faculty extends User {
         frame.setVisible(true);
     }
 
-    private String getFacultyName(String facultyId) {
+    private void setCourseHours(String id) {
+    }
+
+    private String getFacultyName(String id) {
         String facultyName = "";
         try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
             String query = "SELECT name FROM faculties WHERE id = ?";
             try (PreparedStatement ps = con.prepareStatement(query)) {
-                ps.setString(1, facultyId);
+                ps.setString(1, id);
                 ResultSet rs = ps.executeQuery();
 
                 if (rs.next()) {
