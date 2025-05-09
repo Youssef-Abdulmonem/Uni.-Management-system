@@ -43,7 +43,7 @@ public class Faculty extends User {
         JButton assignGrades = new JButton("Assign Grades");
         JButton manageCourses = new JButton("Manage Courses");
         JButton setOfficeHours = new JButton("Set Office Hours");
-        JButton generateReports = new JButton("Generate Reports");
+        JButton generateReports = new JButton("View Student Roster");
 
         assignGrades.setBounds(50, 100, 200, 30);
         manageCourses.setBounds(50, 150, 200, 30);
@@ -59,7 +59,6 @@ public class Faculty extends User {
 
         JButton updateProfileButton = updateProfile(frame, id, password, contact, email);
         frame.add(updateProfileButton);
-
 
         assignGrades.addActionListener(new ActionListener() {
             @Override
@@ -88,7 +87,6 @@ public class Faculty extends User {
                 //
             }
         });
-
 
         frame.setVisible(true);
 
@@ -125,13 +123,14 @@ public class Faculty extends User {
                 String finalCourseID = courseID;
 
                 courseButton.addActionListener(e -> {
-                    JFrame gradesFrame = Frame.basicFrame("Assign grades for: " + finalCourseID + " - " + courseName, 400, 600, false);
-                    gradesFrame.setLayout(null);
+                    JFrame gradesFrame = Frame.basicFrame("Assign grades for: " + finalCourseID + " - " + courseName,
+                            400, 600, false);
 
                     try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
                          Statement stm = con.createStatement()) {
 
-                        String studentQuery = "SELECT student_id FROM student_courses WHERE course_id = '" + finalCourseID + "' AND status = 'Registered'";
+                        String studentQuery = "SELECT student_id FROM student_courses WHERE course_id = '"
+                                + finalCourseID + "'";
                         ResultSet studentRs = stm.executeQuery(studentQuery);
 
                         int yPos = 30;
@@ -152,23 +151,11 @@ public class Faculty extends User {
                                 }
                             }
 
-                            JLabel studentLabel = new JLabel("Student Name: : " + studentName + "ID: " + studentId);
+                            JLabel studentLabel = new JLabel("Name: " + studentName + ", ID: " + studentId);
                             studentLabel.setBounds(30, yPos, 250, 25);
                             gradesFrame.add(studentLabel);
 
                             JTextField gradeField = new JTextField();
-                            gradeField.setInputVerifier(new InputVerifier() {
-                                @Override
-                                public boolean verify(JComponent input) {
-                                    try {
-                                        Double.parseDouble(gradeField.getText());  // Try converting to double
-                                        return true;  // Valid double
-                                    } catch (NumberFormatException e) {
-                                        JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
-                                        return false;  // Invalid input
-                                    }
-                                }
-                            });
                             gradeField.setBounds(280, yPos, 80, 25);
                             gradesFrame.add(gradeField);
 
@@ -184,8 +171,11 @@ public class Faculty extends User {
                             try (Connection saveConn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
                                 for (int i = 0; i < studentIds.size(); i++) {
                                     String studentId = studentIds.get(i);
-                                    double grade = Double.parseDouble(gradeFields.get(i).getText());
-                                    String updateQuery = "UPDATE student_courses SET grade = '" + grade + "' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
+                                    String grade = gradeFields.get(i).getText();
+
+                                    String updateQuery = "UPDATE student_courses SET grade = '" + grade
+                                            + "' WHERE student_id = '" + studentId + "' AND course_id = '"
+                                            + finalCourseID + "'";
                                     try (Statement updateStmt = saveConn.createStatement()) {
                                         updateStmt.executeUpdate(updateQuery);
                                     }
@@ -198,6 +188,7 @@ public class Faculty extends User {
                         });
 
                         gradesFrame.setVisible(true);
+
                     } catch (SQLException ex) {
                         ex.printStackTrace();
                     }
@@ -208,6 +199,7 @@ public class Faculty extends User {
                 courseRs.close();
                 courseStmt.close();
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }

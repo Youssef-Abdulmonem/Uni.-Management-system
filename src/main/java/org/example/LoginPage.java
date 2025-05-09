@@ -3,7 +3,6 @@ package org.example;
 import javax.swing.*;
 import java.awt.event.*;
 import java.sql.*;
-import java.util.Objects;
 
 public class LoginPage {
     JFrame frame;
@@ -38,58 +37,49 @@ public class LoginPage {
             public void actionPerformed(ActionEvent e) {
                 String id = idField.getText();
                 String password = new String(passField.getPassword());
-                switch (authenticate(id, password)) {
-                    case 1:
-                        JOptionPane.showMessageDialog(null, "Login Successful!");
-                        frame.dispose();
+                if (authenticate(id, password)) {
+                    frame.dispose();
+
+                    if (id.startsWith("st")) {
                         new Student(id);
-                        break;
-                    case 2:
-                        JOptionPane.showMessageDialog(null, "Login Successful!");
-                        frame.dispose();
+                    } else if (id.startsWith("F")) {
                         new Faculty(id);
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Invalid ID or Password.");
-                        break;
+                    }
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid ID or Password.");
                 }
             }
         });
         frame.setVisible(true);
     }
 
-    private int authenticate(String id, String pass) {
+    private boolean authenticate(String id, String pass) {
         try {
-            String url = "jdbc:sqlite:database.db";
-            Connection conn = DriverManager.getConnection(url);
-
-            String sql = "SELECT id, password FROM students";
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
 
-            while (rs.next()) {
-                String studentId = rs.getString("id");
-                String password = rs.getString("password");
-                if(Objects.equals(id, studentId) && Objects.equals(password, pass) )
-                    return 1;
+            String studentQuery = "SELECT * FROM students WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet studentRs = stmt.executeQuery(studentQuery);
+            if (studentRs.next()) {
+                studentRs.close();
+                stmt.close();
+                conn.close();
+                return true;
             }
-            sql = "SELECT id, password FROM faculties";
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                String studentId = rs.getString("id");
-                String password = rs.getString("password");
-                if(Objects.equals(id, studentId) && Objects.equals(password, pass) )
-                    return 2;
-            }
-            rs.close();
+            studentRs.close();
+
+            String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet facultyRs = stmt.executeQuery(facultyQuery);
+            boolean result = facultyRs.next();
+            facultyRs.close();
             stmt.close();
             conn.close();
-            return 0;
+            return result;
 
         } catch (Exception e) {
             e.printStackTrace();
-            return 0;
+            return false;
         }
     }
 
