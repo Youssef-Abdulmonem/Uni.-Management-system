@@ -18,7 +18,7 @@ public class Student extends User {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-            String query = "SELECT name, password, contact, email ,admissionDate , academicStatus, faculty, department, FROM students WHERE id='" + id + "'";
+            String query = "SELECT name, password, contact, email, admissionDate, academicStatus, faculty, department FROM students WHERE id='" + id + "'";
 
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
@@ -65,7 +65,7 @@ public class Student extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email);
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "students");
         frame.add(updateProfileButton);
 
 

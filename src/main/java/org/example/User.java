@@ -23,7 +23,7 @@ public abstract class User {
         });
     }
 
-    public JButton updateProfile(JFrame frame, String id, String password, String contact, String email) {
+    public JButton updateProfile(JFrame frame, String id, String password, String contact, String email, String account) {
         JButton updateProfileButton = new JButton("Update Profile");
         updateProfileButton.setBounds(600, 60, 150, 30);
         frame.add(updateProfileButton);
@@ -44,9 +44,9 @@ public abstract class User {
             updateFrame.add(updateContactButton);
             updateFrame.add(updateEmailButton);
 
-            updatePasswordButton.addActionListener(ev -> openUpdateFrame("password", id));
-            updateContactButton.addActionListener(ev -> openUpdateFrame("contact", id));
-            updateEmailButton.addActionListener(ev -> openUpdateFrame("email", id));
+            updatePasswordButton.addActionListener(ev -> openUpdateFrame("password", id, account));
+            updateContactButton.addActionListener(ev -> openUpdateFrame("contact", id, account));
+            updateEmailButton.addActionListener(ev -> openUpdateFrame("email", id, account));
 
             updateFrame.setVisible(true);
         });
@@ -54,10 +54,10 @@ public abstract class User {
         return updateProfileButton;
     }
 
-    private void openUpdateFrame(String field, String id) {
+    private void openUpdateFrame(String field, String id, String account) {
         JFrame updateFrame = Frame.basicFrame("Update " + field, 400, 200, false);
 
-        String oldValue = getCurrentValue(field, id);
+        String oldValue = getCurrentValue(field, id, account);
 
         JLabel oldLabel = new JLabel("Old " + field + ": " + oldValue);
         JLabel newLabel = new JLabel("New " + field + ":");
@@ -77,9 +77,11 @@ public abstract class User {
         saveButton.addActionListener(e -> {
             String newValue = newField.getText();
             if (!newValue.isEmpty()) {
+                String query = "UPDATE " + account + " SET " + field + "='" + newValue + "' WHERE id='" + id + "'";
                 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                      Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate("UPDATE students SET " + field + "='" + newValue + "' WHERE id='" + id + "'");
+
+                    stmt.executeUpdate(query);
 
                     JOptionPane.showMessageDialog(updateFrame, field + " updated successfully!");
                 } catch (Exception ex) {
@@ -94,20 +96,23 @@ public abstract class User {
         updateFrame.setVisible(true);
     }
 
-    private String getCurrentValue(String field, String id) {
+
+    private String getCurrentValue(String field, String id, String account) {
         String value = "";
+        String query = "SELECT " + field + " FROM " + account + " WHERE id='" + id + "'";
+
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
              Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
-
-             ResultSet rs = stmt.executeQuery("SELECT " + field + " FROM students WHERE id='" + id + "'")) {
-                if (rs.next()) {
-                    value = rs.getString(field);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (rs.next()) {
+                value = rs.getString(field);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return value;
     }
+
 
 }

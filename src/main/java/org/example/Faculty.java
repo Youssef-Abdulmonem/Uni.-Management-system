@@ -57,7 +57,7 @@ public class Faculty extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email);
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "faculties");
         frame.add(updateProfileButton);
 
         assignGrades.addActionListener(new ActionListener() {
