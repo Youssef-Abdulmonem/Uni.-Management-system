@@ -27,7 +27,7 @@ public class AdminStaff extends User {
                 password = rs.getString("password");
                 contact = rs.getString("contact");
                 email = rs.getString("email");
-                officeHour = rs.getString("officeHour");
+                officeHour = rs.getString("officeHours");
                 role = rs.getString("role");
                 faculty = rs.getString("faculty");
                 department = rs.getString("department");
