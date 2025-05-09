@@ -243,14 +243,25 @@ public class Faculty extends User {
     public static void manageCourse(String facultyId) {
         JFrame frame = Frame.basicFrame("Manage Courses", 800, 700, false);
 
+        JLabel titleLabel = new JLabel("Manage Courses");
+        titleLabel.setBounds(30, 50, 250, 25);
+        frame.add(titleLabel);
+
         JButton changeName = new JButton("Change course name");
         changeName.setBounds(50, 100, 200, 30);
         frame.add(changeName);
 
+        JButton changeDescription = new JButton("Change Course Description");
+        changeDescription.setBounds(50, 150, 200, 30);
+        frame.add(changeDescription);
         
         JButton creditHours = new JButton("Change Credit Hours Course");
-        creditHours.setBounds(50, 150, 200, 30);
+        creditHours.setBounds(50, 200, 200, 30);
         frame.add(creditHours);
+
+        JButton schedule = new JButton("Change Course Schedule");
+        schedule.setBounds(50, 250, 200, 30);
+        frame.add(schedule);
         
         
 
@@ -332,6 +343,86 @@ public class Faculty extends User {
         });
 
 
+        changeDescription.addActionListener(ev -> {
+            try {
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+
+                // Get unique course IDs
+                Statement stmt1 = conn.createStatement();
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ArrayList<String> courseIds = new ArrayList<>();
+                while (rs1.next()) {
+                    courseIds.add(rs1.getString("course_id"));
+                }
+                rs1.close();
+                stmt1.close();
+
+                // Get course names and credit hours
+                HashMap<String, String> courseMap = new HashMap<>();
+                HashMap<String, String> descriptionMap = new HashMap<>();
+                Statement stmt2 = conn.createStatement();
+                for (String courseId : courseIds) {
+                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, description FROM courses WHERE id = '" + courseId + "'");
+                    if (rs2.next()) {
+                        courseMap.put(courseId, rs2.getString("course_name"));
+                        descriptionMap.put(courseId, rs2.getString("description"));
+                    }
+                    rs2.close();
+                }
+                stmt2.close();
+
+                // Create new frame for courses
+                JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
+
+                int y = 20;
+                for (String courseId : courseMap.keySet()) {
+                    String courseName = courseMap.get(courseId);
+                    String descriptionHours = descriptionMap.get(courseId);
+
+                    JButton courseButton = new JButton(courseName);
+                    courseButton.setBounds(50, y, 200, 30);
+                    courseFrame.add(courseButton);
+                    y += 50;
+
+                    courseButton.addActionListener(e -> {
+                        JFrame editFrame = Frame.basicFrame("Edit Description", 400, 200, false);
+
+                        JLabel label = new JLabel("Description:");
+                        label.setBounds(20, 20, 100, 25);
+                        editFrame.add(label);
+
+                        JTextField textField = new JTextField(descriptionHours);
+                        textField.setBounds(130, 20, 200, 25);
+                        editFrame.add(textField);
+
+                        JButton saveButton = new JButton("Save");
+                        saveButton.setBounds(130, 60, 100, 30);
+                        editFrame.add(saveButton);
+
+                        saveButton.addActionListener(evSave -> {
+                            try {
+                                Statement stmtUpdate = conn.createStatement();
+                                stmtUpdate.executeUpdate("UPDATE courses SET description = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                JOptionPane.showMessageDialog(editFrame, "Description updated!");
+                                stmtUpdate.close();
+                                editFrame.dispose();
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                                JOptionPane.showMessageDialog(editFrame, "Error updating Description");
+                            }
+                        });
+
+                        editFrame.setVisible(true);
+                    });
+                }
+
+                courseFrame.setVisible(true);
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
 
         creditHours.addActionListener(ev -> {
             try {
@@ -412,6 +503,89 @@ public class Faculty extends User {
                 ex.printStackTrace();
             }
         });
+
+
+
+        schedule.addActionListener(ev -> {
+            try {
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+
+                // Get unique course IDs
+                Statement stmt1 = conn.createStatement();
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ArrayList<String> courseIds = new ArrayList<>();
+                while (rs1.next()) {
+                    courseIds.add(rs1.getString("course_id"));
+                }
+                rs1.close();
+                stmt1.close();
+
+                // Get course names and credit hours
+                HashMap<String, String> courseMap = new HashMap<>();
+                HashMap<String, String> scheduleMap = new HashMap<>();
+                Statement stmt2 = conn.createStatement();
+                for (String courseId : courseIds) {
+                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, schedule FROM courses WHERE id = '" + courseId + "'");
+                    if (rs2.next()) {
+                        courseMap.put(courseId, rs2.getString("course_name"));
+                        scheduleMap.put(courseId, rs2.getString("schedule"));
+                    }
+                    rs2.close();
+                }
+                stmt2.close();
+
+                // Create new frame for courses
+                JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
+
+                int y = 20;
+                for (String courseId : courseMap.keySet()) {
+                    String courseName = courseMap.get(courseId);
+                    String courseSchedule = scheduleMap.get(courseId);
+
+                    JButton courseButton = new JButton(courseName);
+                    courseButton.setBounds(50, y, 200, 30);
+                    courseFrame.add(courseButton);
+                    y += 50;
+
+                    courseButton.addActionListener(e -> {
+                        JFrame editFrame = Frame.basicFrame("Edit schedule", 400, 200, false);
+
+                        JLabel label = new JLabel("schedule:");
+                        label.setBounds(20, 20, 100, 25);
+                        editFrame.add(label);
+
+                        JTextField textField = new JTextField(courseSchedule);
+                        textField.setBounds(130, 20, 200, 25);
+                        editFrame.add(textField);
+
+                        JButton saveButton = new JButton("Save");
+                        saveButton.setBounds(130, 60, 100, 30);
+                        editFrame.add(saveButton);
+
+                        saveButton.addActionListener(evSave -> {
+                            try {
+                                Statement stmtUpdate = conn.createStatement();
+                                stmtUpdate.executeUpdate("UPDATE courses SET schedule = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                JOptionPane.showMessageDialog(editFrame, "Schedule updated!");
+                                stmtUpdate.close();
+                                editFrame.dispose();
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                                JOptionPane.showMessageDialog(editFrame, "Error updating Schedule.");
+                            }
+                        });
+
+                        editFrame.setVisible(true);
+                    });
+                }
+
+                courseFrame.setVisible(true);
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
 
         frame.setVisible(true);
     }
