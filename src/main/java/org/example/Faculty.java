@@ -87,7 +87,7 @@ public class Faculty extends User {
         generateReports.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //
+                viewStudentRoster(id);
             }
         });
 
@@ -254,7 +254,7 @@ public class Faculty extends User {
         JButton changeDescription = new JButton("Change Course Description");
         changeDescription.setBounds(50, 150, 200, 30);
         frame.add(changeDescription);
-        
+
         JButton creditHours = new JButton("Change Credit Hours Course");
         creditHours.setBounds(50, 200, 200, 30);
         frame.add(creditHours);
@@ -262,8 +262,7 @@ public class Faculty extends User {
         JButton schedule = new JButton("Change Course Schedule");
         schedule.setBounds(50, 250, 200, 30);
         frame.add(schedule);
-        
-        
+
 
         changeName.addActionListener(ev -> {
             try {
@@ -505,7 +504,6 @@ public class Faculty extends User {
         });
 
 
-
         schedule.addActionListener(ev -> {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
@@ -618,7 +616,7 @@ public class Faculty extends User {
                     staffLabel.setBounds(10, yPosition, 450, 30);
 
                     JTextField hoursField = new JTextField(String.valueOf(hours), 5);
-                    hoursField.setBounds(400, yPosition+4, 60, 25);
+                    hoursField.setBounds(400, yPosition + 4, 60, 25);
                     hoursField.setName(staffId);
 
                     yPosition += 40;
@@ -636,7 +634,53 @@ public class Faculty extends User {
         frame.setVisible(true);
     }
 
-    private void setCourseHours(String id) {
+    private void viewStudentRoster(String id) {
+        JFrame frame = Frame.basicFrame("View Student Roster", 800, 700, false);
+        frame.setLayout(new BorderLayout());  // Use BorderLayout for frame
+
+        // Label at the top
+        JLabel label = new JLabel("Student Roster for " + getFacultyName(id) + ":");
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        label.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Remove default border
+        frame.add(label, BorderLayout.NORTH);
+
+        // Panel to hold student rows
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Remove padding and border
+
+        JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder()); // Remove default border of JScrollPane
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+            String query = "SELECT id, name, department FROM students WHERE faculty = '" + getFacultyName(id) + "'";
+            PreparedStatement ps = con.prepareStatement(query);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                String studentId = rs.getString("id");
+                String studentName = rs.getString("name");
+                String department = rs.getString("department");
+
+                JPanel row = new JPanel();
+                row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+                row.setAlignmentX(Component.LEFT_ALIGNMENT);
+                row.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0)); // Optional: To give small margin between rows
+
+                JLabel studentLabel = new JLabel("ID: " + studentId + ", Name: " + studentName + ", Department: " + department);
+                row.add(studentLabel);
+
+                panel.add(row);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Failed to load student roster.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        frame.setVisible(true);
     }
 
     private String getFacultyName(String id) {
