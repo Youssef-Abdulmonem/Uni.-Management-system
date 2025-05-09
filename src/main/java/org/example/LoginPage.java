@@ -44,6 +44,8 @@ public class LoginPage {
                         new Student(id);
                     } else if (id.startsWith("F")) {
                         new Faculty(id);
+                    } else if (id.startsWith("S")) {
+                        new AdminStaff(id);
                     }
 
                 } else {
@@ -71,8 +73,18 @@ public class LoginPage {
 
             String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND password='" + pass + "'";
             ResultSet facultyRs = stmt.executeQuery(facultyQuery);
-            boolean result = facultyRs.next();
+            if (facultyRs.next()) {
+                facultyRs.close();
+                stmt.close();
+                conn.close();
+                return true;
+            }
             facultyRs.close();
+
+            String adminQuery = "SELECT * FROM adminstaff WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet adminRs = stmt.executeQuery(adminQuery);
+            boolean result = adminRs.next();
+            adminRs.close();
             stmt.close();
             conn.close();
             return result;
@@ -82,5 +94,4 @@ public class LoginPage {
             return false;
         }
     }
-
 }
