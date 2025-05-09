@@ -254,7 +254,7 @@ public class Faculty extends User {
         JButton changeDescription = new JButton("Change Course Description");
         changeDescription.setBounds(50, 150, 200, 30);
         frame.add(changeDescription);
-        
+
         JButton creditHours = new JButton("Change Credit Hours Course");
         creditHours.setBounds(50, 200, 200, 30);
         frame.add(creditHours);
@@ -262,8 +262,8 @@ public class Faculty extends User {
         JButton schedule = new JButton("Change Course Schedule");
         schedule.setBounds(50, 250, 200, 30);
         frame.add(schedule);
-        
-        
+
+
 
         changeName.addActionListener(ev -> {
             try {
@@ -592,20 +592,32 @@ public class Faculty extends User {
 
     private void setOfficeHours(String id) {
         JFrame frame = Frame.basicFrame("Set Office Hours", 800, 700, false);
-        frame.setLayout(null);
 
         JLabel label = new JLabel("Set staff office hours here:");
         label.setBounds(10, 10, 250, 30);
         frame.add(label);
 
-        try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
-            String facultyName = getFacultyName(id);
-            String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = ? AND role = ?";
-            try (PreparedStatement ps = con.prepareStatement(query)) {
-                ps.setString(1, facultyName);
-                ps.setString(2, "TA");
+        JButton drButton = new JButton("Doctors");
+        drButton.setBounds(130, 60, 100, 30);
+        frame.add(drButton);
 
-                ResultSet rs = ps.executeQuery();
+        JButton taButton = new JButton("Teachers Assistant");
+        taButton.setBounds(130, 100, 200, 30);
+        frame.add(taButton);
+
+
+        drButton.addActionListener(ae -> {
+            JFrame roleFrame = Frame.basicFrame("Doctors at the faculty", 600, 700, false);
+
+            java.util.List<JTextField> fields = new ArrayList<>();
+
+            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 Statement stmt = con.createStatement()) {
+
+                String role = "Doctor";
+
+                String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = '" + getFacultyName(id) + "' AND role = '" + role + "'";
+                ResultSet rs = stmt.executeQuery(query);
 
                 int yPosition = 50;
                 while (rs.next()) {
@@ -618,25 +630,124 @@ public class Faculty extends User {
                     staffLabel.setBounds(10, yPosition, 450, 30);
 
                     JTextField hoursField = new JTextField(String.valueOf(hours), 5);
-                    hoursField.setBounds(400, yPosition+4, 60, 25);
+                    hoursField.setBounds(400, yPosition + 4, 60, 25);
                     hoursField.setName(staffId);
+
+                    fields.add(hoursField);
 
                     yPosition += 40;
 
-                    frame.add(staffLabel);
-                    frame.add(hoursField);
+                    roleFrame.add(staffLabel);
+                    roleFrame.add(hoursField);
                 }
+
+                JButton saveButton = new JButton("Save");
+                saveButton.setBounds(250, yPosition + 20, 100, 30);
+                roleFrame.add(saveButton);
+
+                saveButton.addActionListener(saveEvent -> {
+                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
+                         Statement updateStmt = updateCon.createStatement()) {
+
+                        for (JTextField field : fields) {
+                            String staffId = field.getName();
+                            int newHours = Integer.parseInt(field.getText());
+
+                            String updateQuery = "UPDATE adminstaff SET officeHours = " + newHours + " WHERE id = '" + staffId + "'";
+                            updateStmt.executeUpdate(updateQuery);
+                        }
+                        JOptionPane.showMessageDialog(roleFrame, "Office hours updated successfully.");
+                        roleFrame.dispose();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(roleFrame, "Failed to update office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(roleFrame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+            roleFrame.setLayout(null);
+            roleFrame.setVisible(true);
+        });
+
+
+
+
+        taButton.addActionListener(ae -> {
+            JFrame roleFrame = Frame.basicFrame("TA at the faculty", 600, 700, false);
+
+            java.util.List<JTextField> fields = new ArrayList<>();
+
+            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 Statement stmt = con.createStatement()) {
+
+                String role = "TA";
+
+                String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = '" + getFacultyName(id) + "' AND role = '" + role + "'";
+                ResultSet rs = stmt.executeQuery(query);
+
+                int yPosition = 50;
+                while (rs.next()) {
+                    String staffId = rs.getString("id");
+                    String name = rs.getString("name");
+                    String department = rs.getString("department");
+                    int hours = rs.getInt("officeHours");
+
+                    JLabel staffLabel = new JLabel("Name: " + name + ", ID: " + staffId + ", Department: " + department + ", Office Hours: ");
+                    staffLabel.setBounds(10, yPosition, 450, 30);
+
+                    JTextField hoursField = new JTextField(String.valueOf(hours), 5);
+                    hoursField.setBounds(400, yPosition + 4, 60, 25);
+                    hoursField.setName(staffId);
+
+                    fields.add(hoursField);
+
+                    yPosition += 40;
+
+                    roleFrame.add(staffLabel);
+                    roleFrame.add(hoursField);
+                }
+
+                JButton saveButton = new JButton("Save");
+                saveButton.setBounds(250, yPosition + 20, 100, 30);
+                roleFrame.add(saveButton);
+
+                saveButton.addActionListener(saveEvent -> {
+                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
+                         Statement updateStmt = updateCon.createStatement()) {
+
+                        for (JTextField field : fields) {
+                            String staffId = field.getName();
+                            int newHours = Integer.parseInt(field.getText());
+
+                            String updateQuery = "UPDATE adminstaff SET officeHours = " + newHours + " WHERE id = '" + staffId + "'";
+                            updateStmt.executeUpdate(updateQuery);
+                        }
+                        JOptionPane.showMessageDialog(roleFrame, "Office hours updated successfully.");
+                        roleFrame.dispose();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(roleFrame, "Failed to update office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(roleFrame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            roleFrame.setLayout(null);
+            roleFrame.setVisible(true);
+        });
+
+
+
+
 
         frame.setVisible(true);
-    }
-
-    private void setCourseHours(String id) {
     }
 
     private String getFacultyName(String id) {
