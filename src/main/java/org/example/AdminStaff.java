@@ -89,7 +89,7 @@ public class AdminStaff extends User {
         generateReports.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                generateReports(id);
+                generateReports();
             }
         });
 
@@ -101,15 +101,201 @@ public class AdminStaff extends User {
     }
 
     private void createCourse(String id) {
+        JFrame registerFrame = Frame.basicFrame("Register New Course", 400, 500, true);
 
+        JLabel nameLabel = new JLabel("Name:");
+        JTextField nameField = new JTextField();
+
+        JLabel descriptionLabel = new JLabel("Description:");
+        JTextField descriptionField = new JTextField();
+
+        JLabel creditLabel = new JLabel("Credit Hours:");
+        JTextField creditField = new JTextField();
+
+        JLabel scheduleLabel = new JLabel("Schedule:");
+        JTextField scheduleField = new JTextField();
+
+        JButton saveButton = new JButton("Save");
+
+        nameLabel.setBounds(30, 30, 120, 25);
+        nameField.setBounds(150, 30, 200, 25);
+
+        descriptionLabel.setBounds(30, 70, 120, 25);
+        descriptionField.setBounds(150, 70, 200, 25);
+
+        creditLabel.setBounds(30, 110, 120, 25);
+        creditField.setBounds(150, 110, 200, 25);
+
+        scheduleLabel.setBounds(30, 150, 120, 25);
+        scheduleField.setBounds(150, 150, 200, 25);
+
+        saveButton.setBounds(150, 320, 100, 30);
+
+        registerFrame.add(nameLabel);
+        registerFrame.add(nameField);
+
+        registerFrame.add(descriptionLabel);
+        registerFrame.add(descriptionField);
+
+        registerFrame.add(creditLabel);
+        registerFrame.add(creditField);
+
+        registerFrame.add(scheduleLabel);
+        registerFrame.add(scheduleField);
+
+        registerFrame.add(saveButton);
+
+        saveButton.addActionListener(e -> {
+            String name = nameField.getText();
+            String description = descriptionField.getText();
+            String credit = creditField.getText();
+            String schedule = scheduleField.getText();
+
+            int maxNumber = 0;
+            String newId = "";
+
+            try {
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT id FROM courses WHERE id LIKE 'C%'");
+
+                while (rs.next()) {
+                    String existingId = rs.getString("id");
+                    int num = Integer.parseInt(existingId.substring(2));
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+
+                int newNumber = maxNumber + 1;
+                newId = String.format("st%02d", newNumber);
+
+                rs.close();
+                stmt.close();
+                conn.close();
+
+                Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
+                Statement stm = con.createStatement();
+
+                String insertQuery = "INSERT INTO courses (id, course_name, description, credit_hours, schedule) " +
+                        "VALUES ('" + newId + "', '" + name + "', '" + description + "', '" + credit + "', '" + schedule + "')";
+
+                stm.executeUpdate(insertQuery);
+
+                JOptionPane.showMessageDialog(registerFrame, "Course Created with ID: " + newId);
+                registerFrame.dispose();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(registerFrame, "Failed to create course.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        registerFrame.setVisible(true);
     }
 
-    private void assignFaculty(String id) {
+    private void assignFaculty(String adminId) {
+        JFrame assignFrame = Frame.basicFrame("Assign Faculty", 400, 300, false);
 
+        JLabel facultyLabel = new JLabel("Faculty:");
+        JTextField facultyField = new JTextField();
+
+        JButton saveButton = new JButton("Save");
+
+        facultyLabel.setBounds(30, 50, 120, 25);
+        facultyField.setBounds(150, 50, 200, 25);
+
+        saveButton.setBounds(150, 100, 100, 30);
+
+        assignFrame.add(facultyLabel);
+        assignFrame.add(facultyField);
+
+        assignFrame.add(saveButton);
+
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            String query = "SELECT faculty FROM adminstaff WHERE id='" + adminId + "'";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            if (rs.next()) {
+                String currentFaculty = rs.getString("faculty");
+                facultyField.setText(currentFaculty);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(assignFrame, "Failed to fetch data.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        saveButton.addActionListener(e -> {
+            String newFaculty = facultyField.getText();
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 Statement stmt = conn.createStatement()) {
+
+                String updateQuery = "UPDATE adminstaff SET faculty = '" + newFaculty + "' WHERE id = '" + adminId + "'";
+                stmt.executeUpdate(updateQuery);
+
+                JOptionPane.showMessageDialog(assignFrame, "Faculty updated successfully.");
+                assignFrame.dispose();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(assignFrame, "Failed to update faculty.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+
+        assignFrame.setVisible(true);
     }
 
-    private void generateReports(String id) {
 
+    private void generateReports() {
+        JFrame reportFrame = Frame.basicFrame("Student Courses Report", 800, 500, false);
+
+        JLabel header = new JLabel("Report of Students");
+        header.setBounds(20, 20, 700, 20);
+        reportFrame.add(header);
+
+        int yPosition = 50;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT sc.student_id, s.name AS student_name, sc.course_id, c.course_name AS course_name, sc.grade, sc.status " +
+                     "FROM student_courses sc " +
+                     "JOIN students s ON sc.student_id = s.id " +
+                     "JOIN courses c ON sc.course_id = c.id")) {
+
+            while (rs.next()) {
+                String studentId = rs.getString("student_id");
+                String studentName = rs.getString("student_name");
+                String courseId = rs.getString("course_id");
+                String courseName = rs.getString("course_name");
+                String grade = rs.getString("grade");
+                String status = rs.getString("status");
+
+                String line = "Student ID: " + studentId + " ,Name: " + studentName + " ,Course ID: " + courseId + " ,Name: " + courseName + " ,Grade: " + grade + " ,Status: " + status;
+                JLabel dataLabel = new JLabel(line);
+                dataLabel.setBounds(20, yPosition, 700, 20);
+                reportFrame.add(dataLabel);
+
+                yPosition += 30;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(reportFrame, "Failed to generate report.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        reportFrame.setVisible(true);
     }
+
+
+
+
 
 }
