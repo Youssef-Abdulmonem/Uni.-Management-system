@@ -247,6 +247,13 @@ public class Faculty extends User {
         changeName.setBounds(50, 100, 200, 30);
         frame.add(changeName);
 
+        
+        JButton creditHours = new JButton("Change Credit Hours Course");
+        creditHours.setBounds(50, 150, 200, 30);
+        frame.add(creditHours);
+        
+        
+
         changeName.addActionListener(ev -> {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
@@ -310,6 +317,88 @@ public class Faculty extends User {
                             } catch (SQLException ex) {
                                 ex.printStackTrace();
                                 JOptionPane.showMessageDialog(editFrame, "Error updating course name.");
+                            }
+                        });
+
+                        editFrame.setVisible(true);
+                    });
+                }
+
+                courseFrame.setVisible(true);
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+
+
+        creditHours.addActionListener(ev -> {
+            try {
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+
+                // Get unique course IDs
+                Statement stmt1 = conn.createStatement();
+                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + facultyId + "'");
+                ArrayList<String> courseIds = new ArrayList<>();
+                while (rs1.next()) {
+                    courseIds.add(rs1.getString("course_id"));
+                }
+                rs1.close();
+                stmt1.close();
+
+                // Get course names and credit hours
+                HashMap<String, String> courseMap = new HashMap<>();
+                HashMap<String, String> creditHoursMap = new HashMap<>();
+                Statement stmt2 = conn.createStatement();
+                for (String courseId : courseIds) {
+                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, credit_hours FROM courses WHERE id = '" + courseId + "'");
+                    if (rs2.next()) {
+                        courseMap.put(courseId, rs2.getString("course_name"));
+                        creditHoursMap.put(courseId, rs2.getString("credit_hours"));
+                    }
+                    rs2.close();
+                }
+                stmt2.close();
+
+                // Create new frame for courses
+                JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
+
+                int y = 20;
+                for (String courseId : courseMap.keySet()) {
+                    String courseName = courseMap.get(courseId);
+                    String courseCreditHours = creditHoursMap.get(courseId);
+
+                    JButton courseButton = new JButton(courseName);
+                    courseButton.setBounds(50, y, 200, 30);
+                    courseFrame.add(courseButton);
+                    y += 50;
+
+                    courseButton.addActionListener(e -> {
+                        JFrame editFrame = Frame.basicFrame("Edit Credit Hours", 400, 200, false);
+
+                        JLabel label = new JLabel("Credit Hours:");
+                        label.setBounds(20, 20, 100, 25);
+                        editFrame.add(label);
+
+                        JTextField textField = new JTextField(courseCreditHours);
+                        textField.setBounds(130, 20, 200, 25);
+                        editFrame.add(textField);
+
+                        JButton saveButton = new JButton("Save");
+                        saveButton.setBounds(130, 60, 100, 30);
+                        editFrame.add(saveButton);
+
+                        saveButton.addActionListener(evSave -> {
+                            try {
+                                Statement stmtUpdate = conn.createStatement();
+                                stmtUpdate.executeUpdate("UPDATE courses SET credit_hours = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                JOptionPane.showMessageDialog(editFrame, "Credit hours updated!");
+                                stmtUpdate.close();
+                                editFrame.dispose();
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                                JOptionPane.showMessageDialog(editFrame, "Error updating credit hours.");
                             }
                         });
 
