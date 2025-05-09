@@ -62,7 +62,7 @@ public class AdminStaff extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "students");
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "adminstaff");
         frame.add(updateProfileButton);
 
         registerStudent.addActionListener(new ActionListener() {
@@ -97,11 +97,96 @@ public class AdminStaff extends User {
     }
 
     private void registerStudent(String adminId) {
+        JFrame frame = Frame.basicFrame("Register Student", 400, 500, false);
+        JLabel studentId = new JLabel("Student ID: ");
+        JTextField sid = new JTextField();
+        JLabel courseId = new JLabel("Course ID: ");
+        JTextField cid = new JTextField();
+        JButton saveButton = new JButton("Save");
+        studentId.setBounds(30, 30, 120, 25);
+        sid.setBounds(150, 30, 120, 25);
+        courseId.setBounds(30, 70, 120, 25);
+        cid.setBounds(150, 70, 120, 25);
+        saveButton.setBounds(150, 320, 100, 30);
+        frame.add(studentId);
+        frame.add(sid);
+        frame.add(courseId);
+        frame.add(cid);
+        frame.add(saveButton);
+        saveButton.addActionListener(e -> {
+            String student = sid.getText();
+            String course = cid.getText();
 
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
+                // Check if student exists
+                String checkStudent = "SELECT id FROM students WHERE id = '" + student + "'";
+                try (PreparedStatement ps = conn.prepareStatement(checkStudent)) {
+                    ResultSet rs = ps.executeQuery();
+                    if (!rs.next()) {
+                        JOptionPane.showMessageDialog(null, "Student ID not found.");
+                        return;
+                    }
+                }
+
+                // Check if course exists
+                String checkCourse = "SELECT id FROM courses WHERE id = '" + course + "'";
+                try (PreparedStatement ps = conn.prepareStatement(checkCourse)) {
+                    ResultSet rs = ps.executeQuery();
+                    if (!rs.next()) {
+                        JOptionPane.showMessageDialog(null, "Course ID not found.");
+                        return;
+                    }
+                }
+
+                // Check if already registered
+                String checkDuplicate = "SELECT student_id, course_id FROM student_courses WHERE student_id = '" + student + "'AND course_id = '" + course + "'";
+                try (PreparedStatement ps = conn.prepareStatement(checkDuplicate)) {
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next()) {
+                        JOptionPane.showMessageDialog(null, "Student already registered for this course.");
+                        return;
+                    }
+                }
+
+                // prerequisites
+                String checkPrerequisites = "SELECT course_id, prerequisite_id FROM course_prerequisites WHERE course_id = '" + course + "'";
+                try (PreparedStatement ps = conn.prepareStatement(checkPrerequisites)) {
+                    ResultSet rs = ps.executeQuery();
+                    while (rs.next()) {
+                        String prerequisite = rs.getString("prerequisite_id");
+                        String checkPrereq = "SELECT status FROM student_courses WHERE student_id = '" + student + "'AND course_id = '" + prerequisite + "'AND status = 'Completed' AND grade >= 50";
+                        try (PreparedStatement ps2 = conn.prepareStatement(checkPrereq)) {
+                            ResultSet rs2 = ps2.executeQuery();
+                            if (!rs2.next()) {
+                                JOptionPane.showMessageDialog(null, "Student must complete prerequisite course before registering for this course.");
+                                return;
+                            }
+                        } catch (SQLException ex) {
+                        }
+                    }
+                }
+
+                // Register student
+                String insertQuery = "INSERT INTO student_courses (student_id, course_id, status) VALUES ('" + student + "', '" + course + "', 'Registered')";
+                try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
+                    ps.executeUpdate();
+                }
+
+                JOptionPane.showMessageDialog(null, "Student registered successfully!");
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error registering student.");
+            }
+
+            frame.dispose();
+        });
+        frame.setVisible(true);
     }
 
     private void createCourse(String id) {
-        JFrame registerFrame = Frame.basicFrame("Register New Course", 400, 500, true);
+        JFrame registerFrame = Frame.basicFrame("Register New Course", 400, 500, false);
 
         JLabel nameLabel = new JLabel("Name:");
         JTextField nameField = new JTextField();
@@ -252,7 +337,6 @@ public class AdminStaff extends User {
 
         assignFrame.setVisible(true);
     }
-
 
     private void generateReports() {
         JFrame reportFrame = Frame.basicFrame("Student Courses Report", 800, 500, false);
