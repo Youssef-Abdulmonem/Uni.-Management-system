@@ -132,8 +132,7 @@ public class Faculty extends User {
                     try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
                          Statement stm = con.createStatement()) {
 
-                        String studentQuery = "SELECT student_id FROM student_courses WHERE course_id = '"
-                                + finalCourseID + "'";
+                        String studentQuery = "SELECT student_id,status FROM student_courses WHERE course_id = '" + finalCourseID + "'AND status == 'Registered'";
                         ResultSet studentRs = stm.executeQuery(studentQuery);
 
                         int yPos = 30;
@@ -160,7 +159,7 @@ public class Faculty extends User {
                             gradesFrame.add(studentLabel);
 
                             String grade = "";
-                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "' AND status = 'Registered'";
+                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
                             try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
                                  Statement gradeStmt = gradeConn.createStatement();
                                  ResultSet gradeRs = gradeStmt.executeQuery(gradeQuery)) {
@@ -179,7 +178,6 @@ public class Faculty extends User {
                             gradesFrame.add(gradeField);
                             gradeFields.add(gradeField);
 
-                            
                             yPos += 40;
 
                             JLabel completedLabel = new JLabel("Completed:");
@@ -227,7 +225,7 @@ public class Faculty extends User {
                                     if (completedCheckBox.isSelected()) {
                                         String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
                                         try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
-                                            statusStmt.executeUpdate(updateStatusQuery);
+                                            statusStmt.executeUpdate();
                                         }
                                     }
                                 }
