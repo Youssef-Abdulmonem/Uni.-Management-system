@@ -61,7 +61,7 @@ public class SystemAdmin extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "adminstaff");
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "systemAdmin");
         frame.add(updateProfileButton);
 
         createUser.addActionListener(new ActionListener() {
@@ -81,7 +81,7 @@ public class SystemAdmin extends User {
         backupData.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                backupData(id);
+                backupData();
             }
         });
 
@@ -140,7 +140,7 @@ public class SystemAdmin extends User {
                 prefix = "SA";
                 break;
             case "adminStaff":
-                labels = new String[]{"name", "password", "contact", "email", "faculty", "department", "role", "officeHour"};
+                labels = new String[]{"name", "password", "contact", "email", "faculty", "department", "role", "officeHours"};
                 prefix = "S";
                 break;
             case "faculties":
@@ -179,9 +179,7 @@ public class SystemAdmin extends User {
         saveButton.setBounds(50, y + 40, 100, 30);
         formFrame.add(saveButton);
 
-        saveButton.addActionListener(e -> saveUserToDatabaseInsecure(userType, newId, labels, fields));
-
-        formFrame.dispose();
+        saveButton.addActionListener(e -> saveUserToDatabaseInsecure(userType, newId, labels, fields, formFrame));
 
         formFrame.setVisible(true);
     }
@@ -211,7 +209,7 @@ public class SystemAdmin extends User {
         return newId;
     }
 
-    private void saveUserToDatabaseInsecure(String table, String id, String[] labels, JTextField[] fields) {
+    private void saveUserToDatabaseInsecure(String table, String id, String[] labels, JTextField[] fields, JFrame frame) {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
             StringBuilder cols = new StringBuilder("id");
@@ -227,6 +225,8 @@ public class SystemAdmin extends User {
             conn.close();
             JOptionPane.showMessageDialog(null, "User created successfully!");
 
+            frame.dispose();
+
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Error saving user.");
@@ -239,9 +239,71 @@ public class SystemAdmin extends User {
 
     }
 
-    private void backupData(String id) {
+    private void backupData() {
+        JFrame backupFrame = Frame.basicFrame("Backup Data", 800, 600, false);
 
+        JTextArea textArea = new JTextArea();
+        textArea.setBounds(20, 20, 740, 480);
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setBounds(20, 20, 740, 480);
+        backupFrame.add(scrollPane);
+
+        JButton downloadButton = new JButton("Download");
+        downloadButton.setBounds(350, 520, 100, 30);
+        backupFrame.add(downloadButton);
+
+        StringBuilder allData = new StringBuilder();
+
+        String[] tables = {"systemAdmin", "adminStaff", "faculties", "students"};
+
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            Statement stmt = conn.createStatement();
+
+            for (String table : tables) {
+                allData.append("=== ").append(table.toUpperCase()).append(" ===\n");
+
+                ResultSet rs = stmt.executeQuery("SELECT * FROM " + table);
+                ResultSetMetaData meta = rs.getMetaData();
+                int columnCount = meta.getColumnCount();
+
+                while (rs.next()) {
+                    for (int i = 1; i <= columnCount; i++) {
+                        allData.append(meta.getColumnName(i)).append(": ").append(rs.getString(i)).append(" | ");
+                    }
+                    allData.append("\n");
+                }
+                allData.append("\n");
+                rs.close();
+            }
+
+            stmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error fetching data.");
+        }
+
+        textArea.setText(allData.toString());
+
+        downloadButton.addActionListener(e -> {
+            try {
+                String fileName = "backup_data.txt";
+                java.io.FileWriter writer = new java.io.FileWriter(fileName);
+                writer.write(allData.toString());
+                writer.close();
+                JOptionPane.showMessageDialog(null, "Backup saved to " + fileName);
+                backupFrame.dispose();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error saving file.");
+            }
+        });
+
+        backupFrame.setVisible(true);
     }
+
 
     private void managePermissions(String id) {
 
