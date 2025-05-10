@@ -253,7 +253,7 @@ public class AdminStaff extends User {
                 }
 
                 int newNumber = maxNumber + 1;
-                newId = String.format("st%02d", newNumber);
+                newId = String.format("C%02d", newNumber);
 
                 rs.close();
                 stmt.close();
