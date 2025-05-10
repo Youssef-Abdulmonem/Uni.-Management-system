@@ -62,7 +62,7 @@ public class AdminStaff extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "students");
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "adminstaff");
         frame.add(updateProfileButton);
 
         registerStudent.addActionListener(new ActionListener() {
@@ -89,7 +89,7 @@ public class AdminStaff extends User {
         generateReports.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                generateReports(id);
+                generateReports();
             }
         });
 
@@ -97,7 +97,7 @@ public class AdminStaff extends User {
     }
 
     private void registerStudent(String adminId) {
-        JFrame frame = Frame.basicFrame("Register Student", 400, 500, true);
+        JFrame frame = Frame.basicFrame("Register Student", 400, 500, false);
         JLabel studentId = new JLabel("Student ID: ");
         JTextField sid = new JTextField();
         JLabel courseId = new JLabel("Course ID: ");
@@ -186,7 +186,7 @@ public class AdminStaff extends User {
     }
 
     private void createCourse(String id) {
-        JFrame registerFrame = Frame.basicFrame("Register New Course", 400, 500, true);
+        JFrame registerFrame = Frame.basicFrame("Create New Course", 400, 500, false);
 
         JLabel nameLabel = new JLabel("Name:");
         JTextField nameField = new JTextField();
@@ -253,7 +253,7 @@ public class AdminStaff extends User {
                 }
 
                 int newNumber = maxNumber + 1;
-                newId = String.format("C%02d", newNumber);
+                newId = String.format("st%02d", newNumber);
 
                 rs.close();
                 stmt.close();
@@ -277,10 +277,9 @@ public class AdminStaff extends User {
         });
 
         registerFrame.setVisible(true);
-
     }
 
-    private void assignFaculty(String id) {
+    private void assignFaculty(String adminId) {
         JFrame assignFrame = Frame.basicFrame("Assign Faculty", 400, 300, false);
 
         JLabel facultyLabel = new JLabel("Faculty:");
@@ -300,7 +299,7 @@ public class AdminStaff extends User {
 
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            String query = "SELECT faculty FROM adminstaff WHERE id='" + id + "'";
+            String query = "SELECT faculty FROM adminstaff WHERE id='" + adminId + "'";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
@@ -323,7 +322,7 @@ public class AdminStaff extends User {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                  Statement stmt = conn.createStatement()) {
 
-                String updateQuery = "UPDATE adminstaff SET faculty = '" + newFaculty + "' WHERE id = '" + id + "'";
+                String updateQuery = "UPDATE adminstaff SET faculty = '" + newFaculty + "' WHERE id = '" + adminId + "'";
                 stmt.executeUpdate(updateQuery);
 
                 JOptionPane.showMessageDialog(assignFrame, "Faculty updated successfully.");
@@ -339,8 +338,48 @@ public class AdminStaff extends User {
         assignFrame.setVisible(true);
     }
 
-    private void generateReports(String id) {
+    private void generateReports() {
+        JFrame reportFrame = Frame.basicFrame("Student Courses Report", 800, 500, false);
 
+        JLabel header = new JLabel("Report of Students");
+        header.setBounds(20, 20, 700, 20);
+        reportFrame.add(header);
+
+        int yPosition = 50;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT sc.student_id, s.name AS student_name, sc.course_id, c.course_name AS course_name, sc.grade, sc.status " +
+                     "FROM student_courses sc " +
+                     "JOIN students s ON sc.student_id = s.id " +
+                     "JOIN courses c ON sc.course_id = c.id")) {
+
+            while (rs.next()) {
+                String studentId = rs.getString("student_id");
+                String studentName = rs.getString("student_name");
+                String courseId = rs.getString("course_id");
+                String courseName = rs.getString("course_name");
+                String grade = rs.getString("grade");
+                String status = rs.getString("status");
+
+                String line = "Student ID: " + studentId + " ,Name: " + studentName + " ,Course ID: " + courseId + " ,Name: " + courseName + " ,Grade: " + grade + " ,Status: " + status;
+                JLabel dataLabel = new JLabel(line);
+                dataLabel.setBounds(20, yPosition, 700, 20);
+                reportFrame.add(dataLabel);
+
+                yPosition += 30;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(reportFrame, "Failed to generate report.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        reportFrame.setVisible(true);
     }
+
+
+
+
 
 }
