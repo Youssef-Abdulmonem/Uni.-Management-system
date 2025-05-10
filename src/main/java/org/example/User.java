@@ -76,6 +76,18 @@ public abstract class User {
 
         saveButton.addActionListener(e -> {
             String newValue = newField.getText();
+            if(field.equals("password") && newValue.length() < 6) {
+                JOptionPane.showMessageDialog(updateFrame, "Password must be at least 6 characters long!");
+                return;
+            }
+            if(field.equals("contact") && (newValue.length() != 11 || (!newValue.startsWith("010") && !newValue.startsWith("011") && !newValue.startsWith("012") && !newValue.startsWith("015")))) {
+                JOptionPane.showMessageDialog(updateFrame, "Contact number must be 11 digits long and starts with a valid prefix (010, 011, 012, 015)!");
+                return;
+            }
+            if(field.equals("email") && !newValue.endsWith("@gmail.com") && !newValue.contains("@yahoo.com") && !newValue.contains("@alexu.org")) {
+                JOptionPane.showMessageDialog(updateFrame, "Email must be a valid gmail, yahoo or alexu.org email!");
+                return;
+            }
             if (!newValue.isEmpty()) {
                 String query = "UPDATE " + account + " SET " + field + "='" + newValue + "' WHERE id='" + id + "'";
                 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
@@ -87,10 +99,10 @@ public abstract class User {
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
+                updateFrame.dispose();
             } else {
                 JOptionPane.showMessageDialog(updateFrame, "Input is empty!");
             }
-            updateFrame.dispose();
         });
 
         updateFrame.setVisible(true);
