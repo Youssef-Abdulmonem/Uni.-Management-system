@@ -32,7 +32,6 @@ public class LoginPage {
         loginButton = new JButton("Login");
         loginButton.setBounds(100, 110, 160, 25);
         frame.add(loginButton);
-
         forgetPassword(frame);
 
         loginButton.addActionListener(new ActionListener() {
@@ -41,8 +40,8 @@ public class LoginPage {
                 String password = new String(passField.getPassword());
                 int auth = authenticate(id, password);
                 if (auth > 0) {
+                    JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                     frame.dispose();
-
                     if (auth == 1) {
                         new Student(id);
                     } else if (auth == 2) {
@@ -52,7 +51,6 @@ public class LoginPage {
                     } else if (auth == 4) {
                         new SystemAdmin(id);
                     }
-
                 } else {
                     JOptionPane.showMessageDialog(null, "Invalid ID or Password.");
                 }
@@ -119,7 +117,7 @@ public class LoginPage {
         return 0;
     }
 
-    public void forgetPassword(JFrame frame) {
+    private void forgetPassword(JFrame frame) {
         JButton forgetButton = new JButton("Forget Password");
         forgetButton.setBounds(80, 150, 200, 25);
         frame.add(forgetButton);
@@ -181,60 +179,31 @@ public class LoginPage {
     }
 
     private int resetAuthenticate(String id, String email) {
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
+        String url = "jdbc:sqlite:database.db";
 
-            String studentQuery = "SELECT * FROM students WHERE id='" + id + "' AND email='" + email + "'";
-            ResultSet studentRs = stmt.executeQuery(studentQuery);
-            if (studentRs.next()) {
-                studentRs.close();
-                stmt.close();
-                conn.close();
-                return 1;
+        String[] tables = {"students", "faculties", "adminstaff", "systemAdmin"};
+
+        for (int i = 0; i < tables.length; i++) {
+            String query = "SELECT * FROM " + tables[i] + " WHERE id=? AND email=?";
+
+            try (Connection conn = DriverManager.getConnection(url);
+                 PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+                pstmt.setString(1, id);
+                pstmt.setString(2, email);
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return i + 1; // 1=students, 2=faculties, etc.
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return 0;
             }
-            studentRs.close();
-
-
-            String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND email='" + email + "'";
-            ResultSet facultyRs = stmt.executeQuery(facultyQuery);
-            if (facultyRs.next()) {
-                facultyRs.close();
-                stmt.close();
-                conn.close();
-                return 2;
-            }
-            facultyRs.close();
-
-
-            String adminQuery = "SELECT * FROM adminstaff WHERE id='" + id + "' AND email='" + email + "'";
-            ResultSet adminRs = stmt.executeQuery(adminQuery);
-            if (adminRs.next()) {
-                adminRs.close();
-                stmt.close();
-                conn.close();
-                return 3;
-            }
-            adminRs.close();
-
-
-            String sysAdminQuery = "SELECT * FROM systemAdmin WHERE id='" + id + "' AND email='" + email + "'";
-            ResultSet sysAdminRs = stmt.executeQuery(sysAdminQuery);
-            if (sysAdminRs.next()) {
-                sysAdminRs.close();
-                stmt.close();
-                conn.close();
-                return 4;
-            }
-            sysAdminRs.close();
-            stmt.close();
-            conn.close();
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
         }
+
         return 0;
     }
 
@@ -256,38 +225,30 @@ public class LoginPage {
         saveButton.addActionListener(e -> {
             String newPassword = new String(passField.getPassword());
 
-            try {
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                Statement stmt = conn.createStatement();
-                String query = "UPDATE " + accountType + " SET password = '" + newPassword + "' WHERE id = '" + id + "'";
+            if (newPassword.length() < 6) {
+                JOptionPane.showMessageDialog(resetFrame, "Password must be at least 6 characters long!");
+                return;
+            }
 
+            String query = "UPDATE " + accountType + " SET password = '" + newPassword + "' WHERE id = '" + id + "'";
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+                Statement stmt = conn.createStatement();
                 stmt.executeUpdate(query);
 
-                stmt.close();
-                conn.close();
-
                 JOptionPane.showMessageDialog(null, "Password updated successfully!");
-
                 resetFrame.dispose();
 
-                if (accountType.equals("students")) {
-                    new Student(id);
-                } else if (accountType.equals("faculties")) {
-                    new Faculty(id);
-                } else if (accountType.equals("adminStaff")) {
-                    new AdminStaff(id);
-                } else if (accountType.equals("systemAdmin")) {
-                    new SystemAdmin(id);
-                }
+                stmt.close();
 
             } catch (SQLException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Failed to update password");
+                JOptionPane.showMessageDialog(null, "Failed to update password. Try again later.");
             }
         });
 
+
         resetFrame.setVisible(true);
     }
-
 
 }

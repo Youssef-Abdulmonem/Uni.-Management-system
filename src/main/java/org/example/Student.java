@@ -117,7 +117,11 @@ public class Student extends User {
 
             String query = "SELECT c.id, c.course_name " +
                     "FROM courses c " +
-                    "WHERE c.id NOT IN (SELECT course_id FROM student_courses WHERE student_id = '" + id + "') " +
+                    "JOIN course_department cd ON c.id = cd.course_id " +
+                    "JOIN departments d ON cd.department_id = d.id " +
+                    "JOIN students s ON s.department = d.name " +
+                    "WHERE s.id = '" + id + "' " + // Match the student
+                    "AND c.id NOT IN (SELECT course_id FROM student_courses WHERE student_id = '" + id + "') " +
                     "AND (" +
                     "c.id NOT IN (SELECT course_id FROM course_prerequisites) " +
                     "OR EXISTS (" +
@@ -128,6 +132,7 @@ public class Student extends User {
                     "AND sc.grade >= 50" +
                     ")" +
                     ")";
+
 
             ResultSet rs = stmt.executeQuery(query);
 
@@ -309,7 +314,7 @@ public class Student extends User {
             String query = "SELECT c.credit_hours, sc.grade " +
                     "FROM courses c " +
                     "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                    "WHERE sc.student_id = '" + id + "'";
+                    "WHERE sc.student_id = '" + id + "' AND sc.status = 'Completed'";
             ResultSet rs = stmt.executeQuery(query);
 
             double totalPoints = 0.0;
