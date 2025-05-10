@@ -314,7 +314,7 @@ public class Student extends User {
             String query = "SELECT c.credit_hours, sc.grade " +
                     "FROM courses c " +
                     "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                    "WHERE sc.student_id = '" + id + "'";
+                    "WHERE sc.student_id = '" + id + "' AND sc.status = 'Completed'";
             ResultSet rs = stmt.executeQuery(query);
 
             double totalPoints = 0.0;

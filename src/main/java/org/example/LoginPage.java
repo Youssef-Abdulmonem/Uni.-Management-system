@@ -11,7 +11,7 @@ public class LoginPage {
     JButton loginButton;
 
     public LoginPage() {
-        frame = Frame.basicFrame("Login Page", 300, 200, true);
+        frame = Frame.basicFrame("Login Page", 350, 250, true);
 
         JLabel idLabel = new JLabel("Enter ID:");
         idLabel.setBounds(20, 20, 80, 25);
@@ -30,8 +30,9 @@ public class LoginPage {
         frame.add(passField);
 
         loginButton = new JButton("Login");
-        loginButton.setBounds(100, 100, 160, 25);
+        loginButton.setBounds(100, 110, 160, 25);
         frame.add(loginButton);
+        forgetPassword(frame);
 
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -115,4 +116,139 @@ public class LoginPage {
         }
         return 0;
     }
+
+    private void forgetPassword(JFrame frame) {
+        JButton forgetButton = new JButton("Forget Password");
+        forgetButton.setBounds(80, 150, 200, 25);
+        frame.add(forgetButton);
+
+        forgetButton.addActionListener(e -> {
+            JFrame forgetFrame = Frame.basicFrame("Forget Password", 300, 200, false);
+
+            JLabel idLabel = new JLabel("Enter ID:");
+            idLabel.setBounds(20, 20, 80, 25);
+            forgetFrame.add(idLabel);
+
+            idField = new JTextField();
+            idField.setBounds(100, 20, 160, 25);
+            forgetFrame.add(idField);
+
+
+            JLabel emailLabel = new JLabel("Enter Email:");
+            emailLabel.setBounds(20, 60, 80, 25);
+            forgetFrame.add(emailLabel);
+
+            JTextField emailField = new JTextField();
+            emailField.setBounds(100, 60, 160, 25);
+            forgetFrame.add(emailField);
+
+
+            JButton resetButton = new JButton("Reset Password");
+            resetButton.setBounds(70, 100, 170, 25);
+            forgetFrame.add(resetButton);
+
+
+            resetButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    String id = idField.getText();
+                    String email = new String(emailField.getText());
+                    int auth = resetAuthenticate(id, email);
+                    if (auth > 0) {
+                        forgetFrame.dispose();
+
+                        if (auth == 1) {
+                            resetPassword(id, "students");
+                        } else if (auth == 2) {
+                            resetPassword(id, "faculties");
+                        } else if (auth == 3) {
+                            resetPassword(id, "adminStaff");
+                        } else if (auth == 4) {
+                            resetPassword(id, "systemAdmin");
+                        }
+
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Invalid ID or Email.");
+                    }
+                }
+            });
+
+
+            forgetFrame.setVisible(true);
+        });
+
+    }
+
+    private int resetAuthenticate(String id, String email) {
+        String url = "jdbc:sqlite:database.db";
+
+        String[] tables = {"students", "faculties", "adminstaff", "systemAdmin"};
+
+        for (int i = 0; i < tables.length; i++) {
+            String query = "SELECT * FROM " + tables[i] + " WHERE id=? AND email=?";
+
+            try (Connection conn = DriverManager.getConnection(url);
+                 PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+                pstmt.setString(1, id);
+                pstmt.setString(2, email);
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return i + 1; // 1=students, 2=faculties, etc.
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    private void resetPassword(String id, String accountType) {
+        JFrame resetFrame = Frame.basicFrame("Reset Password", 300, 200, false);
+
+        JLabel passLabel = new JLabel("New Password:");
+        passLabel.setBounds(20, 40, 100, 25);
+        resetFrame.add(passLabel);
+
+        JPasswordField passField = new JPasswordField();
+        passField.setBounds(130, 40, 120, 25);
+        resetFrame.add(passField);
+
+        JButton saveButton = new JButton("Save");
+        saveButton.setBounds(90, 100, 100, 30);
+        resetFrame.add(saveButton);
+
+        saveButton.addActionListener(e -> {
+            String newPassword = new String(passField.getPassword());
+
+            if (newPassword.length() < 6) {
+                JOptionPane.showMessageDialog(resetFrame, "Password must be at least 6 characters long!");
+                return;
+            }
+
+            String query = "UPDATE " + accountType + " SET password = '" + newPassword + "' WHERE id = '" + id + "'";
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+                Statement stmt = conn.createStatement();
+                stmt.executeUpdate(query);
+
+                JOptionPane.showMessageDialog(null, "Password updated successfully!");
+                resetFrame.dispose();
+
+                stmt.close();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Failed to update password. Try again later.");
+            }
+        });
+
+
+        resetFrame.setVisible(true);
+    }
+
 }
