@@ -61,7 +61,7 @@ public class SystemAdmin extends User {
 
         logout(frame);
 
-        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "adminstaff");
+        JButton updateProfileButton = updateProfile(frame, id, password, contact, email, "systemAdmin");
         frame.add(updateProfileButton);
 
         createUser.addActionListener(new ActionListener() {
@@ -140,7 +140,7 @@ public class SystemAdmin extends User {
                 prefix = "SA";
                 break;
             case "adminStaff":
-                labels = new String[]{"name", "password", "contact", "email", "faculty", "department", "role", "officeHour"};
+                labels = new String[]{"name", "password", "contact", "email", "faculty", "department", "role", "officeHours"};
                 prefix = "S";
                 break;
             case "faculties":
@@ -179,9 +179,7 @@ public class SystemAdmin extends User {
         saveButton.setBounds(50, y + 40, 100, 30);
         formFrame.add(saveButton);
 
-        saveButton.addActionListener(e -> saveUserToDatabaseInsecure(userType, newId, labels, fields));
-
-        formFrame.dispose();
+        saveButton.addActionListener(e -> saveUserToDatabaseInsecure(userType, newId, labels, fields, formFrame));
 
         formFrame.setVisible(true);
     }
@@ -211,7 +209,7 @@ public class SystemAdmin extends User {
         return newId;
     }
 
-    private void saveUserToDatabaseInsecure(String table, String id, String[] labels, JTextField[] fields) {
+    private void saveUserToDatabaseInsecure(String table, String id, String[] labels, JTextField[] fields, JFrame frame) {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
             StringBuilder cols = new StringBuilder("id");
@@ -226,6 +224,8 @@ public class SystemAdmin extends User {
             stmt.close();
             conn.close();
             JOptionPane.showMessageDialog(null, "User created successfully!");
+
+            frame.dispose();
 
         } catch (SQLException e) {
             e.printStackTrace();
