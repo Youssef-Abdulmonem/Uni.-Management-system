@@ -227,7 +227,7 @@ public class Faculty extends User {
                                     if (completedCheckBox.isSelected()) {
                                         String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
                                         try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
-                                            statusStmt.executeUpdate(updateStatusQuery);
+                                            statusStmt.executeUpdate();
                                         }
                                     }
                                 }
