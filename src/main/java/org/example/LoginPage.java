@@ -39,8 +39,8 @@ public class LoginPage {
                 String password = new String(passField.getPassword());
                 int auth = authenticate(id, password);
                 if (auth > 0) {
+                    JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                     frame.dispose();
-
                     if (auth == 1) {
                         new Student(id);
                     } else if (auth == 2) {
@@ -50,7 +50,6 @@ public class LoginPage {
                     } else if (auth == 4) {
                         new SystemAdmin(id);
                     }
-
                 } else {
                     JOptionPane.showMessageDialog(null, "Invalid ID or Password.");
                 }
