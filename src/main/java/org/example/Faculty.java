@@ -139,6 +139,7 @@ public class Faculty extends User {
                         int yPos = 30;
                         java.util.List<JTextField> gradeFields = new java.util.ArrayList<>();
                         java.util.List<String> studentIds = new java.util.ArrayList<>();
+                        java.util.List<JCheckBox> completedCheckBoxes = new java.util.ArrayList<>();
 
                         while (studentRs.next()) {
                             String studentId = studentRs.getString("student_id");
@@ -159,14 +160,14 @@ public class Faculty extends User {
                             gradesFrame.add(studentLabel);
 
                             String grade = "";
-                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
+                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "' AND status = 'Registered'";
                             try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
                                  Statement gradeStmt = gradeConn.createStatement();
                                  ResultSet gradeRs = gradeStmt.executeQuery(gradeQuery)) {
                                 if (gradeRs.next()) {
                                     grade = gradeRs.getString("grade");
                                 } else {
-                                    grade = "N/A";
+                                    grade = "";
                                     System.out.println("No grade found for studentId: " + studentId + ", courseId: " + finalCourseID);
                                 }
                             } catch (SQLException ex) {
@@ -176,9 +177,20 @@ public class Faculty extends User {
                             JTextField gradeField = new JTextField(grade);
                             gradeField.setBounds(280, yPos, 80, 25);
                             gradesFrame.add(gradeField);
-
-
                             gradeFields.add(gradeField);
+
+                            
+                            yPos += 40;
+
+                            JLabel completedLabel = new JLabel("Completed:");
+                            completedLabel.setBounds(30, yPos, 80, 25);
+                            gradesFrame.add(completedLabel);
+
+                            JCheckBox completedCheckBox = new JCheckBox();
+                            completedCheckBox.setBounds(100, yPos, 25, 25);
+                            gradesFrame.add(completedCheckBox);
+                            completedCheckBoxes.add(completedCheckBox);
+
                             yPos += 40;
                         }
 
@@ -210,6 +222,13 @@ public class Faculty extends User {
                                             + finalCourseID + "'";
                                     try (Statement updateStmt = saveConn.createStatement()) {
                                         updateStmt.executeUpdate(updateQuery);
+                                    }
+                                    JCheckBox completedCheckBox = completedCheckBoxes.get(i);
+                                    if (completedCheckBox.isSelected()) {
+                                        String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
+                                        try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
+                                            statusStmt.executeUpdate(updateStatusQuery);
+                                        }
                                     }
                                 }
 
@@ -685,8 +704,6 @@ public class Faculty extends User {
             roleFrame.setLayout(null);
             roleFrame.setVisible(true);
         });
-
-
 
 
         taButton.addActionListener(ae -> {
