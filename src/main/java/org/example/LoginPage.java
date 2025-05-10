@@ -37,15 +37,18 @@ public class LoginPage {
             public void actionPerformed(ActionEvent e) {
                 String id = idField.getText();
                 String password = new String(passField.getPassword());
-                if (authenticate(id, password)) {
+                int auth = authenticate(id, password);
+                if (auth > 0) {
                     frame.dispose();
 
-                    if (id.startsWith("st")) {
+                    if (auth == 1) {
                         new Student(id);
-                    } else if (id.startsWith("F")) {
+                    } else if (auth == 2) {
                         new Faculty(id);
-                    } else if (id.startsWith("S")) {
+                    } else if (auth == 3) {
                         new AdminStaff(id);
+                    } else if (auth == 4) {
+                        new SystemAdmin(id);
                     }
 
                 } else {
@@ -56,7 +59,7 @@ public class LoginPage {
         frame.setVisible(true);
     }
 
-    private boolean authenticate(String id, String pass) {
+    private int authenticate(String id, String pass) {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
             Statement stmt = conn.createStatement();
@@ -67,9 +70,10 @@ public class LoginPage {
                 studentRs.close();
                 stmt.close();
                 conn.close();
-                return true;
+                return 1;
             }
             studentRs.close();
+
 
             String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND password='" + pass + "'";
             ResultSet facultyRs = stmt.executeQuery(facultyQuery);
@@ -77,21 +81,39 @@ public class LoginPage {
                 facultyRs.close();
                 stmt.close();
                 conn.close();
-                return true;
+                return 2;
             }
             facultyRs.close();
 
+
             String adminQuery = "SELECT * FROM adminstaff WHERE id='" + id + "' AND password='" + pass + "'";
             ResultSet adminRs = stmt.executeQuery(adminQuery);
-            boolean result = adminRs.next();
+            if (adminRs.next()) {
+                adminRs.close();
+                stmt.close();
+                conn.close();
+                return 3;
+            }
             adminRs.close();
+
+
+            String sysAdminQuery = "SELECT * FROM systemAdmin WHERE id='" + id + "' AND password='" + pass + "'";
+            ResultSet sysAdminRs = stmt.executeQuery(sysAdminQuery);
+            if (sysAdminRs.next()) {
+                sysAdminRs.close();
+                stmt.close();
+                conn.close();
+                return 4;
+            }
+            sysAdminRs.close();
             stmt.close();
             conn.close();
-            return result;
+
 
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return 0;
         }
+        return 0;
     }
 }
