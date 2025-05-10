@@ -127,7 +127,62 @@ public class SystemAdmin extends User {
     }
 
     private void modifySystemSettings(String id) {
+        JFrame frame = Frame.basicFrame("Manage Permissions", 400, 300, false);
 
+        JCheckBox allowLogin = new JCheckBox("Allow Login");
+        JCheckBox allowPassReset = new JCheckBox("Allow Password Resetting");
+        JCheckBox allowUpdatingProfile = new JCheckBox("Allow Updating Profile");
+
+        allowLogin.setBounds(50, 30, 300, 30);
+        allowPassReset.setBounds(50, 70, 300, 30);
+        allowUpdatingProfile.setBounds(50, 110, 300, 30);
+
+        JButton saveButton = new JButton("Save");
+        saveButton.setBounds(150, 170, 100, 30);
+
+        frame.add(allowLogin);
+        frame.add(allowPassReset);
+        frame.add(allowUpdatingProfile);
+        frame.add(saveButton);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             Statement stmt = conn.createStatement()) {
+
+            String query = "SELECT * FROM system_permissions WHERE id = 1";
+            ResultSet rs = stmt.executeQuery(query);
+            if (rs.next()) {
+                allowLogin.setSelected(rs.getInt("allow_login") == 1);
+                allowPassReset.setSelected(rs.getInt("allow_reset") == 1);
+                allowUpdatingProfile.setSelected(rs.getInt("allow_updating_profile") == 1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        saveButton.addActionListener(e -> {
+            int drop = allowLogin.isSelected() ? 1 : 0;
+            int register = allowPassReset.isSelected() ? 1 : 0;
+            int update = allowUpdatingProfile.isSelected() ? 1 : 0;
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 Statement stmt = conn.createStatement()) {
+
+                String updateQuery = "UPDATE system_permissions SET " +
+                        "allow_login = " + drop + ", " +
+                        "allow_reset = " + register + ", " +
+                        "allow_updating_profile = " + update +
+                        " WHERE id = 1";
+
+                stmt.executeUpdate(updateQuery);
+                stmt.close();
+                JOptionPane.showMessageDialog(frame, "Permissions updated successfully.");
+                frame.dispose();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        frame.setVisible(true);
     }
 
     private void backupData() {
@@ -198,20 +253,17 @@ public class SystemAdmin extends User {
     private void managePermissions(String id) {
         JFrame frame = Frame.basicFrame("Manage Permissions", 400, 300, false);
 
-        JCheckBox allowDropping = new JCheckBox("Allow Dropping");
-        JCheckBox allowRegistering = new JCheckBox("Allow Registering");
-        JCheckBox allowUpdatingProfile = new JCheckBox("Allow Updating Profile");
+        JCheckBox allowLogin = new JCheckBox("Allow Dropping");
+        JCheckBox allowPassReset = new JCheckBox("Allow Registering");
 
-        allowDropping.setBounds(50, 30, 300, 30);
-        allowRegistering.setBounds(50, 70, 300, 30);
-        allowUpdatingProfile.setBounds(50, 110, 300, 30);
+        allowLogin.setBounds(50, 30, 300, 30);
+        allowPassReset.setBounds(50, 70, 300, 30);
 
         JButton saveButton = new JButton("Save");
         saveButton.setBounds(150, 170, 100, 30);
 
-        frame.add(allowDropping);
-        frame.add(allowRegistering);
-        frame.add(allowUpdatingProfile);
+        frame.add(allowLogin);
+        frame.add(allowPassReset);
         frame.add(saveButton);
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
@@ -220,31 +272,29 @@ public class SystemAdmin extends User {
             String query = "SELECT * FROM system_permissions WHERE id = 1";
             ResultSet rs = stmt.executeQuery(query);
             if (rs.next()) {
-                allowDropping.setSelected(rs.getInt("allow_dropping") == 1);
-                allowRegistering.setSelected(rs.getInt("allow_registering") == 1);
-                allowUpdatingProfile.setSelected(rs.getInt("allow_updating_profile") == 1);
+                allowLogin.setSelected(rs.getInt("allow_dropping") == 1);
+                allowPassReset.setSelected(rs.getInt("allow_registering") == 1);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         saveButton.addActionListener(e -> {
-            int drop = allowDropping.isSelected() ? 1 : 0;
-            int register = allowRegistering.isSelected() ? 1 : 0;
-            int update = allowUpdatingProfile.isSelected() ? 1 : 0;
+            int drop = allowLogin.isSelected() ? 1 : 0;
+            int register = allowPassReset.isSelected() ? 1 : 0;
 
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                  Statement stmt = conn.createStatement()) {
 
                 String updateQuery = "UPDATE system_permissions SET " +
                         "allow_dropping = " + drop + ", " +
-                        "allow_registering = " + register + ", " +
-                        "allow_updating_profile = " + update +
+                        "allow_registering = " + register +
                         " WHERE id = 1";
 
                 stmt.executeUpdate(updateQuery);
-
+                stmt.close();
                 JOptionPane.showMessageDialog(frame, "Permissions updated successfully.");
+                frame.dispose();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
@@ -252,7 +302,6 @@ public class SystemAdmin extends User {
 
         frame.setVisible(true);
     }
-
 
     private void openUserForm(String userType) {
         JFrame formFrame = Frame.basicFrame("Create " + userType, 400, 500, false);

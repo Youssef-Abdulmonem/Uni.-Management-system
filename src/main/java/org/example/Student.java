@@ -103,6 +103,21 @@ public class Student extends User {
 
 
     private void registerForCourse(String id) {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT allow_registering FROM system_permissions WHERE id = 1");
+            while (rs.next()) {
+                boolean permission = rs.getBoolean("allow_registering");
+                if(!permission) {
+                    JOptionPane.showMessageDialog(null, "Registering courses isn't allowed!");
+                    return;
+                }
+            }
+        }
+        catch (SQLException ex) {
+            ex.printStackTrace();
+        }
         frame = Frame.basicFrame("Register for Courses", 600, 600, false);
 
         JLabel titleLabel = new JLabel("Select Courses to Register:");
@@ -188,6 +203,22 @@ public class Student extends User {
 
 
     private void dropCourse(String id) {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT allow_dropping FROM system_permissions WHERE id = 1");
+            while (rs.next()) {
+                boolean permission = rs.getBoolean("allow_dropping");
+                if(!permission) {
+                    JOptionPane.showMessageDialog(null, "Dropping courses isn't allowed!");
+                    return;
+                }
+            }
+        }
+        catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
         frame = Frame.basicFrame("Drop Courses", 600, 600, false);
 
         JLabel titleLabel = new JLabel("Select Courses to Drop:");

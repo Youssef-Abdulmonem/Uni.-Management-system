@@ -29,6 +29,21 @@ public abstract class User {
         frame.add(updateProfileButton);
 
         updateProfileButton.addActionListener(e -> {
+            try {
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT allow_updating_profile FROM system_permissions WHERE id = 1");
+                while (rs.next()) {
+                    boolean permission = rs.getBoolean("allow_updating_profile");
+                    if(!permission) {
+                        JOptionPane.showMessageDialog(null, "Updating profile isn't allowed!");
+                        return;
+                    }
+                }
+            }
+            catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             JFrame updateFrame;
             updateFrame = Frame.basicFrame("Update Profile", 400, 400, false);
 
