@@ -46,17 +46,20 @@ public class Faculty extends User {
         JButton assignGrades = new JButton("Assign Grades");
         JButton manageCourses = new JButton("Manage Courses");
         JButton setOfficeHours = new JButton("Set Office Hours");
-        JButton generateReports = new JButton("View Student Roster");
+        JButton createDepartment = new JButton("Create Department");
+        JButton view = new JButton("View Student Roster");
 
         assignGrades.setBounds(50, 100, 200, 30);
         manageCourses.setBounds(50, 150, 200, 30);
         setOfficeHours.setBounds(50, 200, 200, 30);
-        generateReports.setBounds(50, 250, 200, 30);
+        createDepartment.setBounds(50, 250, 200, 30);
+        view.setBounds(50, 300, 200, 30);
 
         frame.add(assignGrades);
         frame.add(manageCourses);
         frame.add(setOfficeHours);
-        frame.add(generateReports);
+        frame.add(createDepartment);
+        frame.add(view);
 
         logout(frame);
 
@@ -84,7 +87,11 @@ public class Faculty extends User {
             }
         });
 
-        generateReports.addActionListener(new ActionListener() {
+        createDepartment.addActionListener(new ActionListener() {
+           @Override
+           public void actionPerformed(ActionEvent e) { createDepartment(id); }
+        });
+        view.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 viewStudentRoster(id);
@@ -789,6 +796,58 @@ public class Faculty extends User {
         frame.setVisible(true);
     }
 
+    private void createDepartment(String id) {
+        JFrame frame = Frame.basicFrame("Create a New Department", 400, 300, false);
+
+        // Department Name
+        JLabel nameLabel = new JLabel("Department Name:");
+        nameLabel.setBounds(50, 50, 150, 25);
+        frame.add(nameLabel);
+
+        JTextField nameField = new JTextField();
+        nameField.setBounds(200, 50, 120, 25);
+        frame.add(nameField);
+
+        // Generate new Department ID
+        String newId = generateNewId("departments", "D");
+        JLabel idLabel = new JLabel("New department ID: " + newId);
+        idLabel.setBounds(50, 80, 250, 25);
+        frame.add(idLabel);
+
+        // Save Button
+        JButton saveButton = new JButton("Save");
+        saveButton.setBounds(50, 120, 100, 30);
+        frame.add(saveButton);
+
+        saveButton.addActionListener(e -> {
+            String name = nameField.getText().trim();
+
+            if (valueExistsInDatabase("departments", "name", id, name)) {
+                JOptionPane.showMessageDialog(null, "Department name already exists.");
+                return;
+            }
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 PreparedStatement stmt = conn.prepareStatement(
+                         "INSERT INTO departments (id, name, faculty_id) VALUES (?, ?, ?)")) {
+
+                stmt.setString(1, newId);
+                stmt.setString(2, name);
+                stmt.setString(3, id);
+                stmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(null, "Department added successfully!");
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error saving department.");
+            }
+
+            frame.dispose();
+        });
+
+        frame.setVisible(true);
+    }
+
     private void viewStudentRoster(String id) {
         JFrame frame = Frame.basicFrame("View Student Roster", 800, 700, false);
         frame.setLayout(new BorderLayout());  // Use BorderLayout for frame
@@ -855,6 +914,49 @@ public class Faculty extends User {
             e.printStackTrace();
         }
         return facultyName;
+    }
+
+    private boolean valueExistsInDatabase(String tableName, String columnName, String id, String value) {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             PreparedStatement stmt = conn.prepareStatement("SELECT 1 FROM " + tableName + " WHERE " + columnName + " = ? AND faculty_id = ? LIMIT 1")) {
+
+            stmt.setString(1, value);
+            stmt.setString(2, id);
+            ResultSet rs = stmt.executeQuery();
+            boolean exists = rs.next();
+            rs.close();
+            return exists;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    private String generateNewId(String table, String prefix) {
+        String newId = "";
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            String query = "SELECT id FROM " + table + " ORDER BY id DESC LIMIT 1";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+
+            int num = 0;
+            if (rs.next()) {
+                String lastId = rs.getString("id").replaceAll("\\D+", "");
+                num = Integer.parseInt(lastId);
+            }
+            num++;
+            newId = prefix + String.format("%02d", num);
+
+            rs.close();
+            stmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return newId;
     }
 
 }
