@@ -6,9 +6,9 @@ import java.awt.event.ActionListener;
 import java.sql.*;
 
 public class AdminStaff extends User {
-    JFrame frame;
+    private JFrame frame;
 
-    String password, name, contact, email, role, officeHours, faculty, department;
+    private String password, name, contact, email, role, officeHours, faculty, department;
 
     public AdminStaff(String id) {
         super(id);

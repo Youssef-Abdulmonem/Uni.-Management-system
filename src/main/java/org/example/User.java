@@ -6,13 +6,13 @@ import java.sql.*;
 
 public abstract class User {
     protected String id;
-    JFrame frame;
+    protected JFrame frame;
 
     public User(String id) {
         this.id = id;
     }
 
-    public static void logout(JFrame frame) {
+    protected static void logout(JFrame frame) {
         JButton logoutButton = new JButton("Logout");
         logoutButton.setBounds(650, 20, 100, 30);
         frame.add(logoutButton);
@@ -23,7 +23,7 @@ public abstract class User {
         });
     }
 
-    public JButton updateProfile(JFrame frame, String id, String password, String contact, String email, String account) {
+    protected JButton updateProfile(JFrame frame, String id, String password, String contact, String email, String account) {
         JButton updateProfileButton = new JButton("Update Profile");
         updateProfileButton.setBounds(600, 60, 150, 30);
         frame.add(updateProfileButton);

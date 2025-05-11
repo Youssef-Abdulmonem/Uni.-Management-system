@@ -5,10 +5,10 @@ import java.awt.event.*;
 import java.sql.*;
 
 public class LoginPage {
-    JFrame frame;
-    JTextField idField;
-    JPasswordField passField;
-    JButton loginButton;
+    private JFrame frame;
+    private JTextField idField;
+    private JPasswordField passField;
+    private JButton loginButton;
 
     public LoginPage() {
         frame = Frame.basicFrame("Login Page", 350, 250, true);

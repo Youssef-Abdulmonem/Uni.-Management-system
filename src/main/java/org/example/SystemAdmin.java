@@ -6,9 +6,9 @@ import java.awt.event.ActionListener;
 import java.sql.*;
 
 public class SystemAdmin extends User {
-    JFrame frame;
+    private JFrame frame;
 
-    String password, name, contact, email, securityLevel;
+    private String password, name, contact, email, securityLevel;
 
     public SystemAdmin(String id) {
         super(id);

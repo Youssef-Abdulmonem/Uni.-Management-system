@@ -4,15 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.rmi.server.ExportException;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Faculty extends User {
-    JFrame frame;
-    String password, name, contact, email, expertise;
+    private JFrame frame;
+    private String password, name, contact, email, expertise;
 
     public Faculty(String id) {
         super(id);

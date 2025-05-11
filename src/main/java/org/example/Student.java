@@ -5,9 +5,9 @@ import java.awt.event.*;
 import java.sql.*;
 
 public class Student extends User {
-    JFrame frame;
+    private JFrame frame;
 
-    String password, name, contact, email, admissionDate, academicStatus, faculty, department;
+    private String password, name, contact, email, admissionDate, academicStatus, faculty, department;
 
     public Student(String id) {
         super(id);
