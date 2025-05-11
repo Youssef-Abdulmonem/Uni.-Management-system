@@ -40,15 +40,39 @@ public class LoginPage {
                 String password = new String(passField.getPassword());
                 int auth = authenticate(id, password);
                 if (auth > 0) {
-                    JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                     frame.dispose();
                     if (auth == 1) {
-                        new Student(id);
+                        try {
+                            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                            Statement stmt = conn.createStatement();
+                            String sql = "SELECT allow_login FROM system_permissions WHERE id = 1";
+                            ResultSet rs = stmt.executeQuery(sql);
+
+                            if (rs.next()) {
+                                int allowLogin = rs.getInt("allow_login");
+                                if (allowLogin == 1) {
+                                    JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
+                                    new Student(id);
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "You are not allowed to login.");
+                                }
+                            }
+
+                            rs.close();
+                            stmt.close();
+                            conn.close();
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(null, "Database error occurred.");
+                        }
                     } else if (auth == 2) {
+                        JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                         new Faculty(id);
                     } else if (auth == 3) {
+                        JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                         new AdminStaff(id);
                     } else if (auth == 4) {
+                        JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                         new SystemAdmin(id);
                     }
                 } else {
@@ -157,7 +181,28 @@ public class LoginPage {
                         forgetFrame.dispose();
 
                         if (auth == 1) {
-                            resetPassword(id, "students");
+                            try {
+                                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                                Statement stmt = conn.createStatement();
+                                String sql = "SELECT allow_reset FROM system_permission WHERE id = 1";
+                                ResultSet rs = stmt.executeQuery(sql);
+
+                                if (rs.next()) {
+                                    int allowReset = rs.getInt("allow_reset");
+                                    if (allowReset == 1) {
+                                        resetPassword(id, "students");
+                                    } else {
+                                        JOptionPane.showMessageDialog(null, "Password reset is not allowed at this time.");
+                                    }
+                                }
+
+                                rs.close();
+                                stmt.close();
+                                conn.close();
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                                JOptionPane.showMessageDialog(null, "Database error occurred.");
+                            }
                         } else if (auth == 2) {
                             resetPassword(id, "faculties");
                         } else if (auth == 3) {
