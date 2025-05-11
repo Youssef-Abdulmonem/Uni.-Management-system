@@ -40,7 +40,6 @@ public class LoginPage {
                 String password = new String(passField.getPassword());
                 int auth = authenticate(id, password);
                 if (auth > 0) {
-                    frame.dispose();
                     if (auth == 1) {
                         try {
                             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
@@ -51,13 +50,13 @@ public class LoginPage {
                             if (rs.next()) {
                                 int allowLogin = rs.getInt("allow_login");
                                 if (allowLogin == 1) {
+                                    frame.dispose();
                                     JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
                                     new Student(id);
                                 } else {
                                     JOptionPane.showMessageDialog(null, "You are not allowed to login.");
                                 }
                             }
-
                             rs.close();
                             stmt.close();
                             conn.close();
@@ -67,12 +66,15 @@ public class LoginPage {
                         }
                     } else if (auth == 2) {
                         JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
+                        frame.dispose();
                         new Faculty(id);
                     } else if (auth == 3) {
                         JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
+                        frame.dispose();
                         new AdminStaff(id);
                     } else if (auth == 4) {
                         JOptionPane.showMessageDialog(null, "Login Successful! Welcome to University Management System.");
+                        frame.dispose();
                         new SystemAdmin(id);
                     }
                 } else {
@@ -184,7 +186,7 @@ public class LoginPage {
                             try {
                                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                                 Statement stmt = conn.createStatement();
-                                String sql = "SELECT allow_reset FROM system_permission WHERE id = 1";
+                                String sql = "SELECT allow_reset FROM system_permissions WHERE id = 1";
                                 ResultSet rs = stmt.executeQuery(sql);
 
                                 if (rs.next()) {
