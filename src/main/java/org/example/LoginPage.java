@@ -33,7 +33,6 @@ public class LoginPage {
         loginButton.setBounds(100, 110, 160, 25);
         frame.add(loginButton);
         forgetPassword(frame);
-
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String id = idField.getText();

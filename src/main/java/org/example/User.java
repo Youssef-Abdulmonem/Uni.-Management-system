@@ -18,10 +18,14 @@ public abstract class User {
         frame.add(logoutButton);
 
         logoutButton.addActionListener(e -> {
-            frame.dispose();
+            for (java.awt.Frame f : java.awt.Frame.getFrames()) {
+                f.dispose();
+            }
+
             new LoginPage();
         });
     }
+
 
     protected JButton updateProfile(JFrame frame, String id, String password, String contact, String email, String account) {
         JButton updateProfileButton = new JButton("Update Profile");

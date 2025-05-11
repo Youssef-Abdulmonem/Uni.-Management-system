@@ -265,6 +265,17 @@ public class AdminStaff extends User {
                 String insertQuery = "INSERT INTO courses (id, course_name, description, credit_hours, schedule) " +
                         "VALUES ('" + newId + "', '" + name + "', '" + description + "', '" + credit + "', '" + schedule + "')";
 
+                PreparedStatement stmtt = con.prepareStatement(
+                        "INSERT INTO course_department (course_id, department_id, faculty_id) VALUES (?, ?, ?)");
+
+                stmtt.setString(1, newId);
+                stmtt.setString(2, department); // make sure this is defined
+                stmtt.setString(3, faculty);    // make sure this is defined
+
+                stmtt.executeUpdate();
+                stmtt.close();
+
+
                 stm.executeUpdate(insertQuery);
 
                 JOptionPane.showMessageDialog(registerFrame, "Course Created with ID: " + newId);
@@ -377,9 +388,6 @@ public class AdminStaff extends User {
 
         reportFrame.setVisible(true);
     }
-
-
-
 
 
 }
