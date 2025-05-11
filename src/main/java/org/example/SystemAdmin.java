@@ -481,11 +481,34 @@ public class SystemAdmin extends User {
                     break;
 
                 case "admissiondate":
-                    if (!value.matches("^\\d{2}-\\d{2}-\\d{4}$")) {
-                        JOptionPane.showMessageDialog(null, "Admission Date must be in DD-MM-YYYY format.");
+                    if (!value.matches("^\\d{2}/\\d{2}/\\d{4}$")) {
+                        JOptionPane.showMessageDialog(null, "Admission Date must be in DD/MM/YYYY format.");
+                        return false;
+                    }
+
+                    try {
+                        String[] parts = value.split("/");
+                        int day = Integer.parseInt(parts[0]);
+                        int month = Integer.parseInt(parts[1]);
+                        int year = Integer.parseInt(parts[2]);
+
+                        if (month < 1 || month > 12) {
+                            throw new Exception("Invalid month");
+                        }
+
+                        int[] daysInMonth = {31, ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+                        int maxDay = daysInMonth[month - 1];
+
+                        if (day < 1 || day > maxDay) {
+                            throw new Exception("Invalid day for the given month and year");
+                        }
+
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Invalid admission date.");
                         return false;
                     }
                     break;
+
 
                 case "academicstatus":
                     if (!value.equalsIgnoreCase("Graduated") && !value.equalsIgnoreCase("On Probation") && !value.equalsIgnoreCase("Active")) {
