@@ -423,8 +423,8 @@ public class SystemAdmin extends User {
 
             switch (label.toLowerCase()) {
                 case "email":
-                    if (value.startsWith("@") || (!value.endsWith("@gmail.com") && !value.contains("@yahoo.com") && !value.contains("@alexu.org"))) {
-                        JOptionPane.showMessageDialog(null, "Email must be a valid gmail, yahoo or alexu.org email!");
+                    if (value.startsWith("@") || (!value.endsWith("@gmail.com") && !value.contains("@yahoo.com") && !value.contains("@alexu.edu"))) {
+                        JOptionPane.showMessageDialog(null, "Email must be a valid gmail, yahoo or alexu.edu email!");
                         return false;
                     }
                     break;
