@@ -99,7 +99,7 @@ public abstract class User {
                 JOptionPane.showMessageDialog(updateFrame, "Contact number must be 11 digits long and starts with a valid prefix (010, 011, 012, 015)!");
                 return;
             }
-            if(field.equals("email") && !newValue.endsWith("@gmail.com") && !newValue.contains("@yahoo.com") && !newValue.contains("@alexu.org")) {
+            if(field.equals("email") && (newValue.startsWith("@") || (!newValue.endsWith("@gmail.com") && !newValue.contains("@yahoo.com") && !newValue.contains("@alexu.org")))){
                 JOptionPane.showMessageDialog(updateFrame, "Email must be a valid gmail, yahoo or alexu.org email!");
                 return;
             }

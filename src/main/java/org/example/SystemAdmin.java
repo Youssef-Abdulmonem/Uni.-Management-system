@@ -22,8 +22,6 @@ public class SystemAdmin extends User {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
-            System.out.println(id);
-
             if (rs.next()) {
                 name = rs.getString("name");
                 password = rs.getString("password");
@@ -250,7 +248,7 @@ public class SystemAdmin extends User {
         backupFrame.setVisible(true);
     }
 
-    private void managePermissions(String id) {
+    private void managePermissions(String id)   {
         JFrame frame = Frame.basicFrame("Manage Permissions", 400, 300, false);
 
         JCheckBox allowLogin = new JCheckBox("Allow Dropping");
@@ -275,6 +273,7 @@ public class SystemAdmin extends User {
                 allowLogin.setSelected(rs.getInt("allow_dropping") == 1);
                 allowPassReset.setSelected(rs.getInt("allow_registering") == 1);
             }
+            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -319,11 +318,11 @@ public class SystemAdmin extends User {
                 prefix = "S";
                 break;
             case "faculties":
-                labels = new String[]{"name", "password", "email", "contact", "expertise"};
+                labels = new String[]{"name", "password", "contact", "email", "expertise"};
                 prefix = "F";
                 break;
             case "students":
-                labels = new String[]{"name", "password", "email", "contact", "admissionDate", "academicStatus", "faculty", "department"};
+                labels = new String[]{"name", "password", "contact", "email", "admissionDate", "academicStatus", "faculty", "department"};
                 prefix = "st";
                 break;
             default:
@@ -354,7 +353,11 @@ public class SystemAdmin extends User {
         saveButton.setBounds(50, y + 40, 100, 30);
         formFrame.add(saveButton);
 
-        saveButton.addActionListener(e -> saveUserToDatabaseInsecure(userType, newId, labels, fields, formFrame));
+        saveButton.addActionListener(e -> {
+            if (validateFields(labels, fields)) {
+                saveUserToDatabaseInsecure(userType, newId, labels, fields, formFrame);
+            }
+        });
 
         formFrame.setVisible(true);
     }
@@ -405,6 +408,112 @@ public class SystemAdmin extends User {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, "Error saving user.");
+        }
+    }
+
+    private boolean validateFields(String[] labels, JTextField[] fields) {
+        for (int i = 0; i < labels.length; i++) {
+            String label = labels[i];
+            String value = fields[i].getText().trim();
+
+            if (value.isEmpty()) {
+                JOptionPane.showMessageDialog(null, label + " can not be empty!");
+                return false;
+            }
+
+            switch (label.toLowerCase()) {
+                case "email":
+                    if (value.startsWith("@") || (!value.endsWith("@gmail.com") && !value.contains("@yahoo.com") && !value.contains("@alexu.org"))) {
+                        JOptionPane.showMessageDialog(null, "Email must be a valid gmail, yahoo or alexu.org email!");
+                        return false;
+                    }
+                    break;
+
+                case "contact":
+                    if(value.length() != 11 || (!value.startsWith("010") && !value.startsWith("011") && !value.startsWith("012") && !value.startsWith("015"))) {
+                        JOptionPane.showMessageDialog(null, "Contact number must be 11 digits long and starts with a valid prefix (010, 011, 012, 015)!");
+                        return false;
+                    }
+                    break;
+
+                case "password":
+                    if (value.length() < 6) {
+                        JOptionPane.showMessageDialog(null, "Password must be at least 6 characters long!");
+                        return false;
+                    }
+                    break;
+
+                case "securitylevel":
+                    if (!value.equalsIgnoreCase("Low") && !value.equalsIgnoreCase("Medium") && !value.equalsIgnoreCase("High")) {
+                        JOptionPane.showMessageDialog(null, "Security Level must be Low, Medium, or High!");
+                        return false;
+                    }
+                    break;
+
+                case "faculty":
+                    if (!valueExistsInDatabase("faculties", "name", value)) {
+                        JOptionPane.showMessageDialog(null, "Faculty '" + value + "' does not exist in the database.");
+                        return false;
+                    }
+                    break;
+
+                case "department":
+                    if (!valueExistsInDatabase("departments", "name", value)) {
+                        JOptionPane.showMessageDialog(null, "Department '" + value + "' does not exist in the database.");
+                        return false;
+                    }
+                    break;
+
+                case "role":
+                    if(!value.equalsIgnoreCase("TA") && !value.equalsIgnoreCase("Doctor"))
+                    {
+                        JOptionPane.showMessageDialog(null, "Role must be TA or Doctor!");
+                        return false;
+                    }
+                    break;
+
+                case "officehours":
+                    int officeHours = Integer.parseInt(value);
+                    if (officeHours < 0 || officeHours > 72) {
+                        JOptionPane.showMessageDialog(null, "Office hours must be between 0 and 72!");
+                        return false;
+                    }
+                    break;
+
+                case "admissiondate":
+                    if (!value.matches("^\\d{2}-\\d{2}-\\d{4}$")) {
+                        JOptionPane.showMessageDialog(null, "Admission Date must be in DD-MM-YYYY format.");
+                        return false;
+                    }
+                    break;
+
+                case "academicstatus":
+                    if (!value.equalsIgnoreCase("Graduated") && !value.equalsIgnoreCase("On Probation") && !value.equalsIgnoreCase("Active")) {
+                        JOptionPane.showMessageDialog(null, "Academic Status must be Active or Graduated or On Probation.");
+                        return false;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        return true;
+    }
+
+    private boolean valueExistsInDatabase(String tableName, String columnName, String value) {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             PreparedStatement stmt = conn.prepareStatement("SELECT 1 FROM " + tableName + " WHERE " + columnName + " = ? LIMIT 1")) {
+
+            stmt.setString(1, value);
+            ResultSet rs = stmt.executeQuery();
+            boolean exists = rs.next();
+            rs.close();
+            return exists;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }
