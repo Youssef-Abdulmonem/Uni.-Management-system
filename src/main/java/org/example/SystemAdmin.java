@@ -323,7 +323,7 @@ public class SystemAdmin extends User {
                 break;
             case "students":
                 labels = new String[]{"name", "password", "contact", "email", "admissionDate", "academicStatus", "faculty", "department"};
-                prefix = "st";
+                prefix = "ST";
                 break;
             default:
                 return;
