@@ -5,7 +5,8 @@ CREATE TABLE systemAdmin
     password      varchar(50)         NOT NULL,
     contact       char(11)            NOT NULL,
     email         varchar(50),
-    securityLevel ENUM('High','medium','Low') NOT NULL
+    securityLevel varchar(6)          NOT NULL,
+    CHECK (securityLevel IN ('High', 'Medium', 'Low'))
 );
 
 CREATE TABLE faculties
@@ -35,10 +36,11 @@ CREATE TABLE adminStaff
     email       varchar(50),
     faculty     varchar(50)         NOT NULL,
     department  varchar(50)         NOT NULL,
-    role        ENUM('TA','DR') NOT NULL,
+    role        varchar(2)          NOT NULL,
     officeHours INT                 NOT NULL,
     FOREIGN KEY (faculty) REFERENCES faculties (name),
-    FOREIGN KEY (department) REFERENCES departments (name)
+    FOREIGN KEY (department) REFERENCES departments (name),
+    CHECK (role IN ('TA', 'DR'))
 );
 
 CREATE TABLE students
@@ -49,12 +51,13 @@ CREATE TABLE students
     contact        char(11)            NOT NULL,
     email          varchar(50),
     admissionDate  DATE,
-    academicStatus ENUM('Active', 'Graduated', 'On Probation') NOT NULL,
+    academicStatus varchar(12)         NOT NULL,
     faculty        varchar(50)         NOT NULL,
     department     varchar(50)         NOT NULL,
     FOREIGN KEY (faculty) REFERENCES faculties (name),
-    FOREIGN KEY (department) REFERENCES departments (name)
-)
+    FOREIGN KEY (department) REFERENCES departments (name),
+    CHECK (academicStatus IN ('Active', 'Graduated', 'On Probation'))
+);
 
 CREATE TABLE courses
 (
@@ -63,7 +66,7 @@ CREATE TABLE courses
     description  varchar(200)        NOT NULL,
     credit_hours INT                 NOT NULL,
     schedule     VARCHAR(50)         NOT NULL
-)
+);
 
 CREATE TABLE course_department
 (
@@ -73,7 +76,7 @@ CREATE TABLE course_department
     FOREIGN KEY (course_id) REFERENCES courses (id),
     FOREIGN KEY (department_id) REFERENCES departments (id),
     FOREIGN KEY (faculty_id) REFERENCES faculties (id)
-)
+);
 
 CREATE TABLE course_prerequisite
 (
@@ -81,14 +84,15 @@ CREATE TABLE course_prerequisite
     prerequisite_id char(4) NOT NULL,
     FOREIGN KEY (course_id) REFERENCES courses (id),
     FOREIGN KEY (prerequisite_id) REFERENCES courses (id)
-)
+);
 
 CREATE TABLE student_course
 (
     student_id char(4) NOT NULL,
-    course_id char(4) NOT NULL,
-    grade INT,
-    status ENUM('Registered','Passed','Failed') NOT NULL,
+    course_id  char(4) NOT NULL,
+    grade      INT,
+    status     varchar(10) NOT NULL,
     FOREIGN KEY (student_id) REFERENCES students (id),
-    FOREIGN KEY (course_id) REFERENCES courses (id)
-)
+    FOREIGN KEY (course_id) REFERENCES courses (id),
+    CHECK (status IN ('Registered','Passed','Failed'))
+);
