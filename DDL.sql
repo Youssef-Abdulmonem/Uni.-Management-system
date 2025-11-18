@@ -11,25 +11,27 @@ CREATE TABLE systemAdmin
 
 CREATE TABLE faculties
 (
-    id        char(4) PRIMARY KEY NOT NULL,
+    id        char(3) PRIMARY KEY NOT NULL,
     name      varchar(50)         NOT NULL,
     password  varchar(50)         NOT NULL,
     contact   char(11)            NOT NULL,
     email     varchar(50),
-    expertise varchar(20)
+    expertise varchar(20),
+    UNIQUE (name)
 );
 
 CREATE TABLE departments
 (
-    id         char(4) PRIMARY KEY NOT NULL,
+    id         char(3) PRIMARY KEY NOT NULL,
     name       varchar(50)         NOT NULL,
     faculty_id varchar(4)          NOT NULL,
-    FOREIGN KEY (faculty_id) REFERENCES faculties (id)
+    FOREIGN KEY (faculty_id) REFERENCES faculties (id),
+    UNIQUE (name)
 );
 
 CREATE TABLE adminStaff
 (
-    id          char(4) PRIMARY KEY NOT NULL,
+    id          char(3) PRIMARY KEY NOT NULL,
     name        varchar(50)         NOT NULL,
     password    varchar(50)         NOT NULL,
     contact     char(11)            NOT NULL,
@@ -61,7 +63,7 @@ CREATE TABLE students
 
 CREATE TABLE courses
 (
-    id           char(4) PRIMARY KEY NOT NULL,
+    id           char(3) PRIMARY KEY NOT NULL,
     course_name  varchar(50)         NOT NULL,
     description  varchar(200)        NOT NULL,
     credit_hours INT                 NOT NULL,
@@ -70,9 +72,9 @@ CREATE TABLE courses
 
 CREATE TABLE course_department
 (
-    course_id     char(4) NOT NULL,
-    department_id char(4) NOT NULL,
-    faculty_id    char(4) NOT NULL,
+    course_id     char(3) NOT NULL,
+    department_id char(3) NOT NULL,
+    faculty_id    char(3) NOT NULL,
     FOREIGN KEY (course_id) REFERENCES courses (id),
     FOREIGN KEY (department_id) REFERENCES departments (id),
     FOREIGN KEY (faculty_id) REFERENCES faculties (id)
@@ -80,8 +82,8 @@ CREATE TABLE course_department
 
 CREATE TABLE course_prerequisite
 (
-    course_id       char(4) NOT NULL,
-    prerequisite_id char(4) NOT NULL,
+    course_id       char(3) NOT NULL,
+    prerequisite_id char(3) NOT NULL,
     FOREIGN KEY (course_id) REFERENCES courses (id),
     FOREIGN KEY (prerequisite_id) REFERENCES courses (id)
 );
@@ -89,7 +91,7 @@ CREATE TABLE course_prerequisite
 CREATE TABLE student_course
 (
     student_id char(4) NOT NULL,
-    course_id  char(4) NOT NULL,
+    course_id  char(3) NOT NULL,
     grade      INT,
     status     varchar(10) NOT NULL,
     FOREIGN KEY (student_id) REFERENCES students (id),
