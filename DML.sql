@@ -1,0 +1,1 @@
+INSERT INTO systemAdmin VALUES ('SA01', 'FCDS', 'DB2025', '01067891021', 'FCDS@gmail.com', 'High')
