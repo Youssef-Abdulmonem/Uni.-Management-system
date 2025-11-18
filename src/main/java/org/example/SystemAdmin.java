@@ -18,9 +18,11 @@ public class SystemAdmin extends User {
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-            String query = "SELECT name, password, contact, email, securityLevel FROM systemAdmin WHERE id='" + id + "'";
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+            String query = "SELECT name, password, contact, email, securityLevel FROM systemAdmin WHERE id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, id);
+
+            ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 name = rs.getString("name");
@@ -31,7 +33,7 @@ public class SystemAdmin extends User {
             }
 
             rs.close();
-            stmt.close();
+            pstmt.close();
             conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -162,19 +164,25 @@ public class SystemAdmin extends User {
             int register = allowPassReset.isSelected() ? 1 : 0;
             int update = allowUpdatingProfile.isSelected() ? 1 : 0;
 
+            String updateQuery =
+                    "UPDATE system_permissions SET " +
+                            "allow_login = ?, " +
+                            "allow_reset = ?, " +
+                            "allow_updating_profile = ? " +
+                            "WHERE id = 1";
+
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                 Statement stmt = conn.createStatement()) {
+                 PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
 
-                String updateQuery = "UPDATE system_permissions SET " +
-                        "allow_login = " + drop + ", " +
-                        "allow_reset = " + register + ", " +
-                        "allow_updating_profile = " + update +
-                        " WHERE id = 1";
+                pstmt.setInt(1, drop);
+                pstmt.setInt(2, register);
+                pstmt.setInt(3, update);
 
-                stmt.executeUpdate(updateQuery);
-                stmt.close();
+                pstmt.executeUpdate();
+
                 JOptionPane.showMessageDialog(frame, "Permissions updated successfully.");
                 frame.dispose();
+
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
@@ -282,22 +290,28 @@ public class SystemAdmin extends User {
             int drop = allowLogin.isSelected() ? 1 : 0;
             int register = allowPassReset.isSelected() ? 1 : 0;
 
+            String updateQuery =
+                    "UPDATE system_permissions SET " +
+                            "allow_dropping = ?, " +
+                            "allow_registering = ? " +
+                            "WHERE id = 1";
+
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                 Statement stmt = conn.createStatement()) {
+                 PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
 
-                String updateQuery = "UPDATE system_permissions SET " +
-                        "allow_dropping = " + drop + ", " +
-                        "allow_registering = " + register +
-                        " WHERE id = 1";
+                pstmt.setInt(1, drop);
+                pstmt.setInt(2, register);
 
-                stmt.executeUpdate(updateQuery);
-                stmt.close();
+                pstmt.executeUpdate();
+
                 JOptionPane.showMessageDialog(frame, "Permissions updated successfully.");
                 frame.dispose();
+
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         });
+
 
         frame.setVisible(true);
     }

@@ -85,62 +85,35 @@ public class LoginPage {
     }
 
     private int authenticate(String id, String pass) {
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
+        String[] tables = {"students", "faculties", "adminstaff", "systemAdmin"};
 
-            String studentQuery = "SELECT * FROM students WHERE id='" + id + "' AND password='" + pass + "'";
-            ResultSet studentRs = stmt.executeQuery(studentQuery);
-            if (studentRs.next()) {
-                studentRs.close();
-                stmt.close();
-                conn.close();
-                return 1;
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
+            for (int i = 0; i < tables.length; i++) {
+
+                String query = "SELECT 1 FROM " + tables[i] + " WHERE id = ? AND password = ? LIMIT 1";
+
+                try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+                    pstmt.setString(1, id);
+                    pstmt.setString(2, pass);
+
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (rs.next()) {
+                            // Return code: 1=student, 2=faculty, 3=adminstaff, 4=systemAdmin
+                            return i + 1;
+                        }
+                    }
+                }
             }
-            studentRs.close();
 
-
-            String facultyQuery = "SELECT * FROM faculties WHERE id='" + id + "' AND password='" + pass + "'";
-            ResultSet facultyRs = stmt.executeQuery(facultyQuery);
-            if (facultyRs.next()) {
-                facultyRs.close();
-                stmt.close();
-                conn.close();
-                return 2;
-            }
-            facultyRs.close();
-
-
-            String adminQuery = "SELECT * FROM adminstaff WHERE id='" + id + "' AND password='" + pass + "'";
-            ResultSet adminRs = stmt.executeQuery(adminQuery);
-            if (adminRs.next()) {
-                adminRs.close();
-                stmt.close();
-                conn.close();
-                return 3;
-            }
-            adminRs.close();
-
-
-            String sysAdminQuery = "SELECT * FROM systemAdmin WHERE id='" + id + "' AND password='" + pass + "'";
-            ResultSet sysAdminRs = stmt.executeQuery(sysAdminQuery);
-            if (sysAdminRs.next()) {
-                sysAdminRs.close();
-                stmt.close();
-                conn.close();
-                return 4;
-            }
-            sysAdminRs.close();
-            stmt.close();
-            conn.close();
-
-
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            return 0;
         }
+
         return 0;
     }
+
 
     private void forgetPassword(JFrame frame) {
         JButton forgetButton = new JButton("Forget Password");
@@ -276,16 +249,17 @@ public class LoginPage {
                 return;
             }
 
-            String query = "UPDATE " + accountType + " SET password = '" + newPassword + "' WHERE id = '" + id + "'";
+            String query = "UPDATE " + accountType + " SET password = ? WHERE id = ?";
 
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
-                Statement stmt = conn.createStatement();
-                stmt.executeUpdate(query);
+                PreparedStatement pstmt = conn.prepareStatement(query);
+                    pstmt.setString(1, newPassword);
+                    pstmt.setString(2, id);
 
-                JOptionPane.showMessageDialog(null, "Password updated successfully!");
-                resetFrame.dispose();
+                    pstmt.executeUpdate();
 
-                stmt.close();
+                    JOptionPane.showMessageDialog(null, "Password updated successfully!");
+                    resetFrame.dispose();
 
             } catch (SQLException ex) {
                 ex.printStackTrace();

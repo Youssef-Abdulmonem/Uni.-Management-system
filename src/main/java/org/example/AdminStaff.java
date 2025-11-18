@@ -15,27 +15,31 @@ public class AdminStaff extends User {
 
         frame = Frame.basicFrame("Admin Staff Page", 800, 700, true);
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
-            String query = "SELECT name, password, contact, email, faculty, department, role, officeHours FROM adminstaff WHERE id='" + id + "'";
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+            String query =
+                    "SELECT name, password, contact, email, faculty, department, role, officeHours " +
+                            "FROM adminstaff WHERE id = ?";
 
-            if (rs.next()) {
-                name = rs.getString("name");
-                password = rs.getString("password");
-                contact = rs.getString("contact");
-                email = rs.getString("email");
-                officeHours = rs.getString("officeHours");
-                role = rs.getString("role");
-                faculty = rs.getString("faculty");
-                department = rs.getString("department");
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setString(1, id);
+
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    name = rs.getString("name");
+                    password = rs.getString("password");
+                    contact = rs.getString("contact");
+                    email = rs.getString("email");
+                    officeHours = rs.getString("officeHours");
+                    role = rs.getString("role");
+                    faculty = rs.getString("faculty");
+                    department = rs.getString("department");
+                }
+
+                rs.close();
             }
 
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -95,7 +99,6 @@ public class AdminStaff extends User {
 
         frame.setVisible(true);
     }
-
     private void registerStudent(String adminId) {
         JFrame frame = Frame.basicFrame("Register Student", 400, 500, false);
         JLabel studentId = new JLabel("Student ID: ");
@@ -113,6 +116,7 @@ public class AdminStaff extends User {
         frame.add(courseId);
         frame.add(cid);
         frame.add(saveButton);
+
         saveButton.addActionListener(e -> {
             String student = sid.getText();
             String course = cid.getText();
@@ -120,8 +124,9 @@ public class AdminStaff extends User {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
                 // Check if student exists
-                String checkStudent = "SELECT id FROM students WHERE id = '" + student + "'";
+                String checkStudent = "SELECT id FROM students WHERE id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkStudent)) {
+                    ps.setString(1, student);
                     ResultSet rs = ps.executeQuery();
                     if (!rs.next()) {
                         JOptionPane.showMessageDialog(null, "Student ID not found.");
@@ -130,8 +135,9 @@ public class AdminStaff extends User {
                 }
 
                 // Check if course exists
-                String checkCourse = "SELECT id FROM courses WHERE id = '" + course + "'";
+                String checkCourse = "SELECT id FROM courses WHERE id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkCourse)) {
+                    ps.setString(1, course);
                     ResultSet rs = ps.executeQuery();
                     if (!rs.next()) {
                         JOptionPane.showMessageDialog(null, "Course ID not found.");
@@ -140,8 +146,10 @@ public class AdminStaff extends User {
                 }
 
                 // Check if already registered
-                String checkDuplicate = "SELECT student_id, course_id FROM student_courses WHERE student_id = '" + student + "'AND course_id = '" + course + "'";
+                String checkDuplicate = "SELECT student_id, course_id FROM student_courses WHERE student_id = ? AND course_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkDuplicate)) {
+                    ps.setString(1, student);
+                    ps.setString(2, course);
                     ResultSet rs = ps.executeQuery();
                     if (rs.next()) {
                         JOptionPane.showMessageDialog(null, "Student already registered for this course.");
@@ -150,26 +158,34 @@ public class AdminStaff extends User {
                 }
 
                 // prerequisites
-                String checkPrerequisites = "SELECT course_id, prerequisite_id FROM course_prerequisites WHERE course_id = '" + course + "'";
+                String checkPrerequisites = "SELECT prerequisite_id FROM course_prerequisites WHERE course_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkPrerequisites)) {
+                    ps.setString(1, course);
                     ResultSet rs = ps.executeQuery();
+
                     while (rs.next()) {
                         String prerequisite = rs.getString("prerequisite_id");
-                        String checkPrereq = "SELECT status FROM student_courses WHERE student_id = '" + student + "'AND course_id = '" + prerequisite + "'AND status = 'Completed' AND grade >= 50";
+
+                        String checkPrereq = "SELECT status FROM student_courses WHERE student_id = ? AND course_id = ? AND status = 'Completed' AND grade >= 50";
+
                         try (PreparedStatement ps2 = conn.prepareStatement(checkPrereq)) {
+                            ps2.setString(1, student);
+                            ps2.setString(2, prerequisite);
                             ResultSet rs2 = ps2.executeQuery();
+
                             if (!rs2.next()) {
-                                JOptionPane.showMessageDialog(null, "Student must complete prerequisite course before registering for this course.");
+                                JOptionPane.showMessageDialog(null, "Student must complete prerequisite course before registering.");
                                 return;
                             }
-                        } catch (SQLException ex) {
                         }
                     }
                 }
 
                 // Register student
-                String insertQuery = "INSERT INTO student_courses (student_id, course_id, status) VALUES ('" + student + "', '" + course + "', 'Registered')";
+                String insertQuery = "INSERT INTO student_courses (student_id, course_id, status) VALUES (?, ?, 'Registered')";
                 try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
+                    ps.setString(1, student);
+                    ps.setString(2, course);
                     ps.executeUpdate();
                 }
 
@@ -182,8 +198,10 @@ public class AdminStaff extends User {
 
             frame.dispose();
         });
+
         frame.setVisible(true);
     }
+
 
     private void createCourse(String id) {
         JFrame registerFrame = Frame.basicFrame("Create New Course", 400, 500, false);
@@ -241,8 +259,10 @@ public class AdminStaff extends User {
 
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT id FROM courses WHERE id LIKE 'C%'");
+
+                String selectQuery = "SELECT id FROM courses WHERE id LIKE 'C%'";
+                PreparedStatement psSelect = conn.prepareStatement(selectQuery);
+                ResultSet rs = psSelect.executeQuery();
 
                 while (rs.next()) {
                     String existingId = rs.getString("id");
@@ -256,27 +276,28 @@ public class AdminStaff extends User {
                 newId = String.format("C%02d", newNumber);
 
                 rs.close();
-                stmt.close();
+                psSelect.close();
                 conn.close();
 
                 Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
-                Statement stm = con.createStatement();
 
-                String insertQuery = "INSERT INTO courses (id, course_name, description, credit_hours, schedule) " +
-                        "VALUES ('" + newId + "', '" + name + "', '" + description + "', '" + credit + "', '" + schedule + "')";
+                String insertCourse = "INSERT INTO courses (id, course_name, description, credit_hours, schedule) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement psInsertCourse = con.prepareStatement(insertCourse);
+                psInsertCourse.setString(1, newId);
+                psInsertCourse.setString(2, name);
+                psInsertCourse.setString(3, description);
+                psInsertCourse.setString(4, credit);
+                psInsertCourse.setString(5, schedule);
+                psInsertCourse.executeUpdate();
+                psInsertCourse.close();
 
-                PreparedStatement stmtt = con.prepareStatement(
-                        "INSERT INTO course_department (course_id, department_id, faculty_id) VALUES (?, ?, ?)");
-
-                stmtt.setString(1, newId);
-                stmtt.setString(2, department); // make sure this is defined
-                stmtt.setString(3, faculty);    // make sure this is defined
-
-                stmtt.executeUpdate();
-                stmtt.close();
-
-
-                stm.executeUpdate(insertQuery);
+                String insertDept = "INSERT INTO course_department (course_id, department_id, faculty_id) VALUES (?, ?, ?)";
+                PreparedStatement psDept = con.prepareStatement(insertDept);
+                psDept.setString(1, newId);
+                psDept.setString(2, department);
+                psDept.setString(3, faculty);
+                psDept.executeUpdate();
+                psDept.close();
 
                 JOptionPane.showMessageDialog(registerFrame, "Course Created with ID: " + newId);
                 registerFrame.dispose();
@@ -285,6 +306,7 @@ public class AdminStaff extends User {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(registerFrame, "Failed to create course.", "Error", JOptionPane.ERROR_MESSAGE);
             }
+
         });
 
         registerFrame.setVisible(true);
@@ -310,9 +332,12 @@ public class AdminStaff extends User {
 
         try {
             Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            String query = "SELECT faculty FROM adminstaff WHERE id='" + adminId + "'";
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+
+            String query = "SELECT faculty FROM adminstaff WHERE id = ?";
+            PreparedStatement ps = conn.prepareStatement(query);
+            ps.setString(1, adminId);
+
+            ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
                 String currentFaculty = rs.getString("faculty");
@@ -320,21 +345,28 @@ public class AdminStaff extends User {
             }
 
             rs.close();
-            stmt.close();
+            ps.close();
             conn.close();
+
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(assignFrame, "Failed to fetch data.", "Error", JOptionPane.ERROR_MESSAGE);
         }
 
+
         saveButton.addActionListener(e -> {
             String newFaculty = facultyField.getText();
 
-            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                 Statement stmt = conn.createStatement()) {
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
-                String updateQuery = "UPDATE adminstaff SET faculty = '" + newFaculty + "' WHERE id = '" + adminId + "'";
-                stmt.executeUpdate(updateQuery);
+                String updateQuery = "UPDATE adminstaff SET faculty = ? WHERE id = ?";
+                PreparedStatement ps = conn.prepareStatement(updateQuery);
+
+                ps.setString(1, newFaculty);
+                ps.setString(2, adminId);
+
+                ps.executeUpdate();
+                ps.close();
 
                 JOptionPane.showMessageDialog(assignFrame, "Faculty updated successfully.");
                 assignFrame.dispose();
@@ -344,6 +376,7 @@ public class AdminStaff extends User {
                 JOptionPane.showMessageDialog(assignFrame, "Failed to update faculty.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
+
 
 
         assignFrame.setVisible(true);

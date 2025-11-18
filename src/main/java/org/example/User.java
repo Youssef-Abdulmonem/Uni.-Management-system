@@ -108,11 +108,14 @@ public abstract class User {
                 return;
             }
             if (!newValue.isEmpty()) {
-                String query = "UPDATE " + account + " SET " + field + "='" + newValue + "' WHERE id='" + id + "'";
+                String query = "UPDATE " + account + " SET " + field + " = ? WHERE id = ?";
                 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                     Statement stmt = conn.createStatement()) {
+                     PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-                    stmt.executeUpdate(query);
+                    pstmt.setString(1, newValue);
+                    pstmt.setString(2, id);
+
+                    pstmt.executeUpdate();
 
                     JOptionPane.showMessageDialog(updateFrame, field + " updated successfully!");
                 } catch (Exception ex) {
@@ -130,20 +133,23 @@ public abstract class User {
 
     private String getCurrentValue(String field, String id, String account) {
         String value = "";
-        String query = "SELECT " + field + " FROM " + account + " WHERE id='" + id + "'";
+        String query = "SELECT " + field + " FROM " + account + " WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, id);
+
+            ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 value = rs.getString(field);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
         return value;
     }
-
 
 }

@@ -16,29 +16,27 @@ public class Faculty extends User {
     public Faculty(String id) {
         super(id);
         frame = Frame.basicFrame("Faculty Page", 800, 700, true);
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+        String sql = "SELECT name, password, contact, email, expertise FROM faculties WHERE id = ?";
 
-            String query = "SELECT name, password, contact, email , expertise FROM faculties WHERE id='" + id + "'";
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+            pstmt.setString(1, id);
 
-            if (rs.next()) {
-                name = rs.getString("name");
-                password = rs.getString("password");
-                contact = rs.getString("contact");
-                email = rs.getString("email");
-                expertise = rs.getString("expertise");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    name = rs.getString("name");
+                    password = rs.getString("password");
+                    contact = rs.getString("contact");
+                    email = rs.getString("email");
+                    expertise = rs.getString("expertise");
+                }
             }
-
-            rs.close();
-            stmt.close();
-            conn.close();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         JLabel helloMessage = new JLabel("Hello " + name + ", Welcome to University Management System!");
         helloMessage.setBounds(50, 50, 400, 30);
         frame.add(helloMessage);
@@ -107,158 +105,167 @@ public class Faculty extends User {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
              Statement stmt = conn.createStatement()) {
 
-            String query = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'";
-            ResultSet rs = stmt.executeQuery(query);
+            String query = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setString(1, id);
+                ResultSet rs = pstmt.executeQuery();
 
-            int yPosition = 30;
-            while (rs.next()) {
-                String courseID = rs.getString("course_id");
+                int yPosition = 30;
+                while (rs.next()) {
+                    String courseID = rs.getString("course_id");
 
-                String courseNameQuery = "SELECT course_name FROM courses WHERE id = '" + courseID + "'";
-                Statement courseStmt = conn.createStatement();
-                ResultSet courseRs = courseStmt.executeQuery(courseNameQuery);
+                    String courseNameQuery = "SELECT course_name FROM courses WHERE id = ?";
+                    PreparedStatement courseStmt = conn.prepareStatement(courseNameQuery);
+                    courseStmt.setString(1, courseID);
+                    ResultSet courseRs = courseStmt.executeQuery();
 
-                String courseName;
-                if (courseRs.next()) {
-                    courseName = courseRs.getString("course_name");
-                } else {
-                    courseName = courseID;
-                }
+                    String courseName;
+                    if (courseRs.next()) {
+                        courseName = courseRs.getString("course_name");
+                    } else {
+                        courseName = courseID;
+                    }
 
-                JButton courseButton = new JButton(courseName);
-                courseButton.setBounds(50, yPosition, 200, 30);
-                yPosition += 40;
+                    JButton courseButton = new JButton(courseName);
+                    courseButton.setBounds(50, yPosition, 200, 30);
+                    yPosition += 40;
 
-                String finalCourseID = courseID;
+                    String finalCourseID = courseID;
 
-                courseButton.addActionListener(e -> {
-                    JFrame gradesFrame = Frame.basicFrame("Assign grades for: " + finalCourseID + " - " + courseName,
-                            400, 600, false);
+                    courseButton.addActionListener(e -> {
+                        JFrame gradesFrame = Frame.basicFrame("Assign grades for: " + finalCourseID + " - " + courseName,
+                                400, 600, false);
 
-                    try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
-                         Statement stm = con.createStatement()) {
+                        try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
-                        String studentQuery = "SELECT student_id,status FROM student_courses WHERE course_id = '" + finalCourseID + "'AND status == 'Registered'";
-                        ResultSet studentRs = stm.executeQuery(studentQuery);
+                            String studentQuery = "SELECT student_id,status FROM student_courses WHERE course_id = ? AND status = 'Registered'";
+                            PreparedStatement stm = con.prepareStatement(studentQuery);
+                            stm.setString(1, finalCourseID);
+                            ResultSet studentRs = stm.executeQuery();
 
-                        int yPos = 30;
-                        java.util.List<JTextField> gradeFields = new java.util.ArrayList<>();
-                        java.util.List<String> studentIds = new java.util.ArrayList<>();
-                        java.util.List<JCheckBox> completedCheckBoxes = new java.util.ArrayList<>();
+                            int yPos = 30;
+                            java.util.List<JTextField> gradeFields = new java.util.ArrayList<>();
+                            java.util.List<String> studentIds = new java.util.ArrayList<>();
+                            java.util.List<JCheckBox> completedCheckBoxes = new java.util.ArrayList<>();
 
-                        while (studentRs.next()) {
-                            String studentId = studentRs.getString("student_id");
-                            studentIds.add(studentId);
+                            while (studentRs.next()) {
+                                String studentId = studentRs.getString("student_id");
+                                studentIds.add(studentId);
 
-                            String studentName = studentId;
+                                String studentName = studentId;
 
-                            String nameQuery = "SELECT name FROM students WHERE id = '" + studentId + "'";
-                            try (Statement nameStmt = con.createStatement();
-                                 ResultSet nameRs = nameStmt.executeQuery(nameQuery)) {
+                                String nameQuery = "SELECT name FROM students WHERE id = ?";
+                                PreparedStatement nameStmt = con.prepareStatement(nameQuery);
+                                nameStmt.setString(1, studentId);
+                                ResultSet nameRs = nameStmt.executeQuery();
                                 if (nameRs.next()) {
                                     studentName = nameRs.getString("name");
                                 }
-                            }
 
-                            JLabel studentLabel = new JLabel("Name: " + studentName + ", ID: " + studentId);
-                            studentLabel.setBounds(30, yPos, 250, 25);
-                            gradesFrame.add(studentLabel);
+                                JLabel studentLabel = new JLabel("Name: " + studentName + ", ID: " + studentId);
+                                studentLabel.setBounds(30, yPos, 250, 25);
+                                gradesFrame.add(studentLabel);
 
-                            String grade = "";
-                            String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
-                            try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                                 Statement gradeStmt = gradeConn.createStatement();
-                                 ResultSet gradeRs = gradeStmt.executeQuery(gradeQuery)) {
-                                if (gradeRs.next()) {
-                                    grade = gradeRs.getString("grade");
-                                } else {
-                                    grade = "";
-                                    System.out.println("No grade found for studentId: " + studentId + ", courseId: " + finalCourseID);
+                                String grade = "";
+                                String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = ? AND course_id = ?";
+                                try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                                     PreparedStatement gradeStmt = gradeConn.prepareStatement(gradeQuery)) {
+                                    gradeStmt.setString(1, studentId);
+                                    gradeStmt.setString(2, finalCourseID);
+                                    ResultSet gradeRs = gradeStmt.executeQuery();
+                                    if (gradeRs.next()) {
+                                        grade = gradeRs.getString("grade");
+                                    }
+                                } catch (SQLException ex) {
+                                    ex.printStackTrace();
                                 }
-                            } catch (SQLException ex) {
-                                ex.printStackTrace();
+
+                                JTextField gradeField = new JTextField(grade);
+                                gradeField.setBounds(280, yPos, 80, 25);
+                                gradesFrame.add(gradeField);
+                                gradeFields.add(gradeField);
+
+                                yPos += 40;
+
+                                JLabel completedLabel = new JLabel("Completed:");
+                                completedLabel.setBounds(30, yPos, 80, 25);
+                                gradesFrame.add(completedLabel);
+
+                                JCheckBox completedCheckBox = new JCheckBox();
+                                completedCheckBox.setBounds(100, yPos, 25, 25);
+                                gradesFrame.add(completedCheckBox);
+                                completedCheckBoxes.add(completedCheckBox);
+
+                                yPos += 40;
                             }
 
-                            JTextField gradeField = new JTextField(grade);
-                            gradeField.setBounds(280, yPos, 80, 25);
-                            gradesFrame.add(gradeField);
-                            gradeFields.add(gradeField);
+                            JButton saveButton = new JButton("Save");
+                            saveButton.setBounds(150, yPos, 100, 30);
+                            gradesFrame.add(saveButton);
 
-                            yPos += 40;
+                            saveButton.addActionListener(ev -> {
+                                try (Connection saveConn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+                                    for (int i = 0; i < studentIds.size(); i++) {
+                                        String studentId = studentIds.get(i);
+                                        String gradeText = gradeFields.get(i).getText();
+                                        double grade;
 
-                            JLabel completedLabel = new JLabel("Completed:");
-                            completedLabel.setBounds(30, yPos, 80, 25);
-                            gradesFrame.add(completedLabel);
+                                        try {
+                                            grade = Double.parseDouble(gradeText);
+                                            if (grade < 0 || grade > 100) {
+                                                throw new NumberFormatException();
+                                            }
+                                        } catch (NumberFormatException ex) {
+                                            JOptionPane.showMessageDialog(gradesFrame,
+                                                    "Invalid grade entered for student ID: " + studentId + ". Please enter a grade between 0 and 100.",
+                                                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                                            return;
+                                        }
 
-                            JCheckBox completedCheckBox = new JCheckBox();
-                            completedCheckBox.setBounds(100, yPos, 25, 25);
-                            gradesFrame.add(completedCheckBox);
-                            completedCheckBoxes.add(completedCheckBox);
+                                        String updateQuery = "UPDATE student_courses SET grade = ? WHERE student_id = ? AND course_id = ?";
+                                        try (PreparedStatement updateStmt = saveConn.prepareStatement(updateQuery)) {
+                                            updateStmt.setDouble(1, grade);
+                                            updateStmt.setString(2, studentId);
+                                            updateStmt.setString(3, finalCourseID);
+                                            updateStmt.executeUpdate();
+                                        }
 
-                            yPos += 40;
+                                        JCheckBox completedCheckBox = completedCheckBoxes.get(i);
+                                        if (completedCheckBox.isSelected()) {
+                                            String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = ? AND course_id = ?";
+                                            try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
+                                                statusStmt.setString(1, studentId);
+                                                statusStmt.setString(2, finalCourseID);
+                                                statusStmt.executeUpdate();
+                                            }
+                                        }
+                                    }
+
+                                    JOptionPane.showMessageDialog(gradesFrame, "Grades saved successfully!");
+                                    gradesFrame.dispose();
+                                } catch (SQLException ex) {
+                                    ex.printStackTrace();
+                                }
+                            });
+
+                            gradesFrame.setVisible(true);
+
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
                         }
+                    });
 
-                        JButton saveButton = new JButton("Save");
-                        saveButton.setBounds(150, yPos, 100, 30);
-                        gradesFrame.add(saveButton);
+                    frame.add(courseButton);
 
-                        saveButton.addActionListener(ev -> {
-                            try (Connection saveConn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
-                                for (int i = 0; i < studentIds.size(); i++) {
-                                    String studentId = studentIds.get(i);
-                                    String gradeText = gradeFields.get(i).getText();
-                                    double grade;
-
-                                    try {
-                                        grade = Double.parseDouble(gradeText);
-                                        if (grade < 0 || grade > 100) {
-                                            throw new NumberFormatException();
-                                        }
-                                    } catch (NumberFormatException ex) {
-                                        JOptionPane.showMessageDialog(gradesFrame,
-                                                "Invalid grade entered for student ID: " + studentId + ". Please enter a grade between 0 and 100.",
-                                                "Input Error", JOptionPane.ERROR_MESSAGE);
-                                        return;
-                                    }
-
-                                    String updateQuery = "UPDATE student_courses SET grade = '" + grade
-                                            + "' WHERE student_id = '" + studentId + "' AND course_id = '"
-                                            + finalCourseID + "'";
-                                    try (Statement updateStmt = saveConn.createStatement()) {
-                                        updateStmt.executeUpdate(updateQuery);
-                                    }
-                                    JCheckBox completedCheckBox = completedCheckBoxes.get(i);
-                                    if (completedCheckBox.isSelected()) {
-                                        String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = '" + studentId + "' AND course_id = '" + finalCourseID + "'";
-                                        try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
-                                            statusStmt.executeUpdate();
-                                        }
-                                    }
-                                }
-
-                                JOptionPane.showMessageDialog(gradesFrame, "Grades saved successfully!");
-                                gradesFrame.dispose();
-                            } catch (SQLException ex) {
-                                ex.printStackTrace();
-                            }
-                        });
-
-                        gradesFrame.setVisible(true);
-
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                    }
-                });
-
-                frame.add(courseButton);
-
-                courseRs.close();
-                courseStmt.close();
+                    courseRs.close();
+                    courseStmt.close();
+                }
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
 
         frame.setVisible(true);
     }
@@ -291,9 +298,11 @@ public class Faculty extends User {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-                // Get unique course IDs
-                Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
+                String q1 = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = ?";
+                PreparedStatement stmt1 = conn.prepareStatement(q1);
+                stmt1.setString(1, id);
+                ResultSet rs1 = stmt1.executeQuery();
+
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -301,11 +310,13 @@ public class Faculty extends User {
                 rs1.close();
                 stmt1.close();
 
-                // Get course names
                 HashMap<String, String> courseMap = new HashMap<>();
-                Statement stmt2 = conn.createStatement();
+                String q2 = "SELECT course_name FROM courses WHERE id = ?";
+                PreparedStatement stmt2 = conn.prepareStatement(q2);
+
                 for (String courseId : courseIds) {
-                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name FROM courses WHERE id = '" + courseId + "'");
+                    stmt2.setString(1, courseId);
+                    ResultSet rs2 = stmt2.executeQuery();
                     if (rs2.next()) {
                         courseMap.put(courseId, rs2.getString("course_name"));
                     }
@@ -313,7 +324,6 @@ public class Faculty extends User {
                 }
                 stmt2.close();
 
-                // Create new frame for courses
                 JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
 
                 int y = 20;
@@ -342,8 +352,11 @@ public class Faculty extends User {
 
                         saveButton.addActionListener(evSave -> {
                             try {
-                                Statement stmtUpdate = conn.createStatement();
-                                stmtUpdate.executeUpdate("UPDATE courses SET course_name = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                String updateQuery = "UPDATE courses SET course_name = ? WHERE id = ?";
+                                PreparedStatement stmtUpdate = conn.prepareStatement(updateQuery);
+                                stmtUpdate.setString(1, textField.getText());
+                                stmtUpdate.setString(2, courseId);
+                                stmtUpdate.executeUpdate();
                                 JOptionPane.showMessageDialog(editFrame, "Course name updated!");
                                 stmtUpdate.close();
                                 editFrame.dispose();
@@ -362,6 +375,7 @@ public class Faculty extends User {
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+
         });
 
 
@@ -369,9 +383,11 @@ public class Faculty extends User {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-                // Get unique course IDs
-                Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
+                String q1 = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = ?";
+                PreparedStatement stmt1 = conn.prepareStatement(q1);
+                stmt1.setString(1, id);
+                ResultSet rs1 = stmt1.executeQuery();
+
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
@@ -379,12 +395,15 @@ public class Faculty extends User {
                 rs1.close();
                 stmt1.close();
 
-                // Get course names and credit hours
                 HashMap<String, String> courseMap = new HashMap<>();
                 HashMap<String, String> descriptionMap = new HashMap<>();
-                Statement stmt2 = conn.createStatement();
+
+                String q2 = "SELECT course_name, description FROM courses WHERE id = ?";
+                PreparedStatement stmt2 = conn.prepareStatement(q2);
+
                 for (String courseId : courseIds) {
-                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, description FROM courses WHERE id = '" + courseId + "'");
+                    stmt2.setString(1, courseId);
+                    ResultSet rs2 = stmt2.executeQuery();
                     if (rs2.next()) {
                         courseMap.put(courseId, rs2.getString("course_name"));
                         descriptionMap.put(courseId, rs2.getString("description"));
@@ -393,13 +412,12 @@ public class Faculty extends User {
                 }
                 stmt2.close();
 
-                // Create new frame for courses
                 JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
 
                 int y = 20;
                 for (String courseId : courseMap.keySet()) {
                     String courseName = courseMap.get(courseId);
-                    String descriptionHours = descriptionMap.get(courseId);
+                    String description = descriptionMap.get(courseId);
 
                     JButton courseButton = new JButton(courseName);
                     courseButton.setBounds(50, y, 200, 30);
@@ -413,7 +431,7 @@ public class Faculty extends User {
                         label.setBounds(20, 20, 100, 25);
                         editFrame.add(label);
 
-                        JTextField textField = new JTextField(descriptionHours);
+                        JTextField textField = new JTextField(description);
                         textField.setBounds(130, 20, 200, 25);
                         editFrame.add(textField);
 
@@ -423,8 +441,11 @@ public class Faculty extends User {
 
                         saveButton.addActionListener(evSave -> {
                             try {
-                                Statement stmtUpdate = conn.createStatement();
-                                stmtUpdate.executeUpdate("UPDATE courses SET description = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                String updateQuery = "UPDATE courses SET description = ? WHERE id = ?";
+                                PreparedStatement stmtUpdate = conn.prepareStatement(updateQuery);
+                                stmtUpdate.setString(1, textField.getText());
+                                stmtUpdate.setString(2, courseId);
+                                stmtUpdate.executeUpdate();
                                 JOptionPane.showMessageDialog(editFrame, "Description updated!");
                                 stmtUpdate.close();
                                 editFrame.dispose();
@@ -443,6 +464,7 @@ public class Faculty extends User {
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+
         });
 
 
@@ -450,31 +472,36 @@ public class Faculty extends User {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-                // Get unique course IDs
-                Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
+                String sqlCourses = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = ?";
+                PreparedStatement psCourses = conn.prepareStatement(sqlCourses);
+                psCourses.setString(1, id);
+                ResultSet rs1 = psCourses.executeQuery();
+
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
                 }
                 rs1.close();
-                stmt1.close();
+                psCourses.close();
 
-                // Get course names and credit hours
                 HashMap<String, String> courseMap = new HashMap<>();
                 HashMap<String, String> creditHoursMap = new HashMap<>();
-                Statement stmt2 = conn.createStatement();
+
+                String sqlCourseInfo = "SELECT course_name, credit_hours FROM courses WHERE id = ?";
+                PreparedStatement psCourseInfo = conn.prepareStatement(sqlCourseInfo);
+
                 for (String courseId : courseIds) {
-                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, credit_hours FROM courses WHERE id = '" + courseId + "'");
+                    psCourseInfo.setString(1, courseId);
+                    ResultSet rs2 = psCourseInfo.executeQuery();
+
                     if (rs2.next()) {
                         courseMap.put(courseId, rs2.getString("course_name"));
                         creditHoursMap.put(courseId, rs2.getString("credit_hours"));
                     }
                     rs2.close();
                 }
-                stmt2.close();
+                psCourseInfo.close();
 
-                // Create new frame for courses
                 JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
 
                 int y = 20;
@@ -504,10 +531,15 @@ public class Faculty extends User {
 
                         saveButton.addActionListener(evSave -> {
                             try {
-                                Statement stmtUpdate = conn.createStatement();
-                                stmtUpdate.executeUpdate("UPDATE courses SET credit_hours = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                String updateSql = "UPDATE courses SET credit_hours = ? WHERE id = ?";
+                                PreparedStatement psUpdate = conn.prepareStatement(updateSql);
+                                psUpdate.setString(1, textField.getText());
+                                psUpdate.setString(2, courseId);
+
+                                psUpdate.executeUpdate();
+                                psUpdate.close();
+
                                 JOptionPane.showMessageDialog(editFrame, "Credit hours updated!");
-                                stmtUpdate.close();
                                 editFrame.dispose();
                             } catch (SQLException ex) {
                                 ex.printStackTrace();
@@ -524,6 +556,7 @@ public class Faculty extends User {
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+
         });
 
 
@@ -531,29 +564,37 @@ public class Faculty extends User {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
 
-                // Get unique course IDs
-                Statement stmt1 = conn.createStatement();
-                ResultSet rs1 = stmt1.executeQuery("SELECT DISTINCT course_id FROM course_department WHERE faculty_id = '" + id + "'");
+                // Get unique course IDs (SAFE)
+                String sqlCourseIds = "SELECT DISTINCT course_id FROM course_department WHERE faculty_id = ?";
+                PreparedStatement psCourseIds = conn.prepareStatement(sqlCourseIds);
+                psCourseIds.setString(1, id);
+                ResultSet rs1 = psCourseIds.executeQuery();
+
                 ArrayList<String> courseIds = new ArrayList<>();
                 while (rs1.next()) {
                     courseIds.add(rs1.getString("course_id"));
                 }
                 rs1.close();
-                stmt1.close();
+                psCourseIds.close();
 
-                // Get course names and credit hours
+                // Get course names and schedules (SAFE)
                 HashMap<String, String> courseMap = new HashMap<>();
                 HashMap<String, String> scheduleMap = new HashMap<>();
-                Statement stmt2 = conn.createStatement();
+
+                String sqlCourseInfo = "SELECT course_name, schedule FROM courses WHERE id = ?";
+                PreparedStatement psCourseInfo = conn.prepareStatement(sqlCourseInfo);
+
                 for (String courseId : courseIds) {
-                    ResultSet rs2 = stmt2.executeQuery("SELECT course_name, schedule FROM courses WHERE id = '" + courseId + "'");
+                    psCourseInfo.setString(1, courseId);
+                    ResultSet rs2 = psCourseInfo.executeQuery();
+
                     if (rs2.next()) {
                         courseMap.put(courseId, rs2.getString("course_name"));
                         scheduleMap.put(courseId, rs2.getString("schedule"));
                     }
                     rs2.close();
                 }
-                stmt2.close();
+                psCourseInfo.close();
 
                 // Create new frame for courses
                 JFrame courseFrame = Frame.basicFrame("Courses in Faculty", 500, 500, false);
@@ -569,9 +610,10 @@ public class Faculty extends User {
                     y += 50;
 
                     courseButton.addActionListener(e -> {
-                        JFrame editFrame = Frame.basicFrame("Edit schedule", 400, 200, false);
 
-                        JLabel label = new JLabel("schedule:");
+                        JFrame editFrame = Frame.basicFrame("Edit Schedule", 400, 200, false);
+
+                        JLabel label = new JLabel("Schedule:");
                         label.setBounds(20, 20, 100, 25);
                         editFrame.add(label);
 
@@ -585,14 +627,20 @@ public class Faculty extends User {
 
                         saveButton.addActionListener(evSave -> {
                             try {
-                                Statement stmtUpdate = conn.createStatement();
-                                stmtUpdate.executeUpdate("UPDATE courses SET schedule = '" + textField.getText() + "' WHERE id = '" + courseId + "'");
+                                String updateSql = "UPDATE courses SET schedule = ? WHERE id = ?";
+                                PreparedStatement psUpdate = conn.prepareStatement(updateSql);
+                                psUpdate.setString(1, textField.getText());
+                                psUpdate.setString(2, courseId);
+
+                                psUpdate.executeUpdate();
+                                psUpdate.close();
+
                                 JOptionPane.showMessageDialog(editFrame, "Schedule updated!");
-                                stmtUpdate.close();
                                 editFrame.dispose();
+
                             } catch (SQLException ex) {
                                 ex.printStackTrace();
-                                JOptionPane.showMessageDialog(editFrame, "Error updating Schedule.");
+                                JOptionPane.showMessageDialog(editFrame, "Error updating schedule.");
                             }
                         });
 
@@ -632,13 +680,19 @@ public class Faculty extends User {
 
             java.util.List<JTextField> fields = new ArrayList<>();
 
-            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
-                 Statement stmt = con.createStatement()) {
+            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
                 String role = "Doctor";
 
-                String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = '" + getFacultyName(id) + "' AND role = '" + role + "'";
-                ResultSet rs = stmt.executeQuery(query);
+                // Secure SELECT query
+                String query = "SELECT id, name, officeHours, department FROM adminstaff " +
+                        "WHERE faculty = ? AND role = ?";
+
+                PreparedStatement ps = con.prepareStatement(query);
+                ps.setString(1, getFacultyName(id));
+                ps.setString(2, role);
+
+                ResultSet rs = ps.executeQuery();
 
                 int yPosition = 50;
                 while (rs.next()) {
@@ -647,7 +701,10 @@ public class Faculty extends User {
                     String department = rs.getString("department");
                     int hours = rs.getInt("officeHours");
 
-                    JLabel staffLabel = new JLabel("Name: " + name + ", ID: " + staffId + ", Department: " + department + ", Office Hours: ");
+                    JLabel staffLabel = new JLabel(
+                            "Name: " + name + ", ID: " + staffId + ", Department: " +
+                                    department + ", Office Hours: "
+                    );
                     staffLabel.setBounds(10, yPosition, 450, 30);
 
                     JTextField hoursField = new JTextField(String.valueOf(hours), 5);
@@ -667,6 +724,8 @@ public class Faculty extends User {
                 roleFrame.add(saveButton);
 
                 saveButton.addActionListener(saveEvent -> {
+
+                    // Validate input
                     for (JTextField field : fields) {
                         String hoursText = field.getText();
                         int hoursInput;
@@ -676,34 +735,50 @@ public class Faculty extends User {
                                 throw new NumberFormatException();
                             }
                         } catch (NumberFormatException ex) {
-                            JOptionPane.showMessageDialog(roleFrame,
-                                    "Invalid office hours entered for staff ID: " + field.getName() + ". Please enter office hours between 0 and 72.",
-                                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(
+                                    roleFrame,
+                                    "Invalid office hours entered for staff ID: " + field.getName() +
+                                            ". Please enter office hours between 0 and 72.",
+                                    "Input Error", JOptionPane.ERROR_MESSAGE
+                            );
                             return;
                         }
                     }
-                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
-                         Statement updateStmt = updateCon.createStatement()) {
+
+                    // Secure update
+                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
+                        String updateQuery = "UPDATE adminstaff SET officeHours = ? WHERE id = ?";
+                        PreparedStatement psUpdate = updateCon.prepareStatement(updateQuery);
 
                         for (JTextField field : fields) {
                             String staffId = field.getName();
                             int newHours = Integer.parseInt(field.getText());
 
-                            String updateQuery = "UPDATE adminstaff SET officeHours = " + newHours + " WHERE id = '" + staffId + "'";
-                            updateStmt.executeUpdate(updateQuery);
+                            psUpdate.setInt(1, newHours);
+                            psUpdate.setString(2, staffId);
+                            psUpdate.addBatch();  // Efficient batch update
                         }
+
+                        psUpdate.executeBatch();
+                        psUpdate.close();
+
                         JOptionPane.showMessageDialog(roleFrame, "Office hours updated successfully.");
                         roleFrame.dispose();
+
                     } catch (SQLException ex) {
                         ex.printStackTrace();
-                        JOptionPane.showMessageDialog(roleFrame, "Failed to update office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(roleFrame, "Failed to update office hours.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 });
 
             } catch (SQLException e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(roleFrame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(roleFrame, "Failed to load staff office hours.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
+
 
             roleFrame.setLayout(null);
             roleFrame.setVisible(true);
@@ -715,13 +790,18 @@ public class Faculty extends User {
 
             java.util.List<JTextField> fields = new ArrayList<>();
 
-            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
-                 Statement stmt = con.createStatement()) {
+            try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
                 String role = "TA";
 
-                String query = "SELECT id, name, officeHours, department FROM adminstaff WHERE faculty = '" + getFacultyName(id) + "' AND role = '" + role + "'";
-                ResultSet rs = stmt.executeQuery(query);
+                String query = "SELECT id, name, officeHours, department FROM adminstaff " +
+                        "WHERE faculty = ? AND role = ?";
+
+                PreparedStatement ps = con.prepareStatement(query);
+                ps.setString(1, getFacultyName(id));
+                ps.setString(2, role);
+
+                ResultSet rs = ps.executeQuery();
 
                 int yPosition = 50;
                 while (rs.next()) {
@@ -730,7 +810,8 @@ public class Faculty extends User {
                     String department = rs.getString("department");
                     int hours = rs.getInt("officeHours");
 
-                    JLabel staffLabel = new JLabel("Name: " + name + ", ID: " + staffId + ", Department: " + department + ", Office Hours: ");
+                    JLabel staffLabel = new JLabel("Name: " + name + ", ID: " + staffId +
+                            ", Department: " + department + ", Office Hours: ");
                     staffLabel.setBounds(10, yPosition, 450, 30);
 
                     JTextField hoursField = new JTextField(String.valueOf(hours), 5);
@@ -750,6 +831,7 @@ public class Faculty extends User {
                 roleFrame.add(saveButton);
 
                 saveButton.addActionListener(saveEvent -> {
+
                     for (JTextField field : fields) {
                         String hoursText = field.getText();
                         int hoursInput;
@@ -760,33 +842,46 @@ public class Faculty extends User {
                             }
                         } catch (NumberFormatException ex) {
                             JOptionPane.showMessageDialog(roleFrame,
-                                    "Invalid office hours entered for staff ID: " + field.getName() + ". Please enter office hours between 0 and 72.",
+                                    "Invalid office hours entered for staff ID: " + field.getName() +
+                                            ". Please enter office hours between 0 and 72.",
                                     "Input Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
                     }
-                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db");
-                         Statement updateStmt = updateCon.createStatement()) {
+
+                    try (Connection updateCon = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
+                        String updateQuery = "UPDATE adminstaff SET officeHours = ? WHERE id = ?";
+                        PreparedStatement psUpdate = updateCon.prepareStatement(updateQuery);
 
                         for (JTextField field : fields) {
                             String staffId = field.getName();
                             int newHours = Integer.parseInt(field.getText());
 
-                            String updateQuery = "UPDATE adminstaff SET officeHours = " + newHours + " WHERE id = '" + staffId + "'";
-                            updateStmt.executeUpdate(updateQuery);
+                            psUpdate.setInt(1, newHours);
+                            psUpdate.setString(2, staffId);
+                            psUpdate.addBatch();
                         }
+
+                        psUpdate.executeBatch();
+                        psUpdate.close();
+
                         JOptionPane.showMessageDialog(roleFrame, "Office hours updated successfully.");
                         roleFrame.dispose();
+
                     } catch (SQLException ex) {
                         ex.printStackTrace();
-                        JOptionPane.showMessageDialog(roleFrame, "Failed to update office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(roleFrame,
+                                "Failed to update office hours.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 });
 
             } catch (SQLException e) {
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(roleFrame, "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(roleFrame,
+                        "Failed to load staff office hours.", "Error", JOptionPane.ERROR_MESSAGE);
             }
+
 
             roleFrame.setLayout(null);
             roleFrame.setVisible(true);
@@ -867,31 +962,36 @@ public class Faculty extends User {
         frame.add(scrollPane, BorderLayout.CENTER);
 
         try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
-            String query = "SELECT id, name, department FROM students WHERE faculty = '" + getFacultyName(id) + "'";
+            String query = "SELECT id, name, department FROM students WHERE faculty = ?";
             PreparedStatement ps = con.prepareStatement(query);
+            ps.setString(1, getFacultyName(id));
 
-            ResultSet rs = ps.executeQuery();
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String studentId = rs.getString("id");
+                    String studentName = rs.getString("name");
+                    String department = rs.getString("department");
 
-            while (rs.next()) {
-                String studentId = rs.getString("id");
-                String studentName = rs.getString("name");
-                String department = rs.getString("department");
+                    JPanel row = new JPanel();
+                    row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+                    row.setAlignmentX(Component.LEFT_ALIGNMENT);
+                    row.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
 
-                JPanel row = new JPanel();
-                row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-                row.setAlignmentX(Component.LEFT_ALIGNMENT);
-                row.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0)); // Optional: To give small margin between rows
+                    JLabel studentLabel = new JLabel(
+                            "ID: " + studentId + ", Name: " + studentName + ", Department: " + department
+                    );
+                    row.add(studentLabel);
 
-                JLabel studentLabel = new JLabel("ID: " + studentId + ", Name: " + studentName + ", Department: " + department);
-                row.add(studentLabel);
-
-                panel.add(row);
+                    panel.add(row);
+                }
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, "Failed to load student roster.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(
+                    frame, "Failed to load student roster.", "Error", JOptionPane.ERROR_MESSAGE
+            );
         }
+
 
         frame.setVisible(true);
     }

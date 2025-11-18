@@ -15,28 +15,27 @@ public class Student extends User {
         frame = Frame.basicFrame("Student Page", 800, 700, true);
 
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT name, password, contact, email, admissionDate, academicStatus, faculty, department " +
+                             "FROM students WHERE id = ?"
+             )) {
 
-            String query = "SELECT name, password, contact, email, admissionDate, academicStatus, faculty, department FROM students WHERE id='" + id + "'";
 
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query);
+            pstmt.setString(1, id);
 
-            if (rs.next()) {
-                name = rs.getString("name");
-                password = rs.getString("password");
-                contact = rs.getString("contact");
-                email = rs.getString("email");
-                admissionDate = rs.getString("admissionDate");
-                academicStatus = rs.getString("academicStatus");
-                faculty = rs.getString("faculty");
-                department = rs.getString("department");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    name = rs.getString("name");
+                    password = rs.getString("password");
+                    contact = rs.getString("contact");
+                    email = rs.getString("email");
+                    admissionDate = rs.getString("admissionDate");
+                    academicStatus = rs.getString("academicStatus");
+                    faculty = rs.getString("faculty");
+                    department = rs.getString("department");
+                }
             }
-
-            rs.close();
-            stmt.close();
-            conn.close();
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -114,8 +113,7 @@ public class Student extends User {
                     return;
                 }
             }
-        }
-        catch (SQLException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
         frame = Frame.basicFrame("Register for Courses", 600, 600, false);
@@ -126,30 +124,34 @@ public class Student extends User {
 
         java.util.List<JCheckBox> checkboxes = new java.util.ArrayList<>();
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
 
-            String query = "SELECT c.id, c.course_name " +
-                    "FROM courses c " +
-                    "JOIN course_department cd ON c.id = cd.course_id " +
-                    "JOIN departments d ON cd.department_id = d.id " +
-                    "JOIN students s ON s.department = d.name " +
-                    "WHERE s.id = '" + id + "' " + // Match the student
-                    "AND c.id NOT IN (SELECT course_id FROM student_courses WHERE student_id = '" + id + "') " +
-                    "AND (" +
-                    "c.id NOT IN (SELECT course_id FROM course_prerequisites) " +
-                    "OR EXISTS (" +
-                    "SELECT 1 FROM course_prerequisites cp " +
-                    "JOIN student_courses sc ON cp.prerequisite_id = sc.course_id " +
-                    "WHERE cp.course_id = c.id " +
-                    "AND sc.student_id = '" + id + "' " +
-                    "AND sc.grade >= 50" +
-                    ")" +
-                    ")";
+        String query =
+                "SELECT c.id, c.course_name " +
+                        "FROM courses c " +
+                        "JOIN course_department cd ON c.id = cd.course_id " +
+                        "JOIN departments d ON cd.department_id = d.id " +
+                        "JOIN students s ON s.department = d.name " +
+                        "WHERE s.id = ? " +
+                        "AND c.id NOT IN (SELECT course_id FROM student_courses WHERE student_id = ?) " +
+                        "AND (" +
+                        "    c.id NOT IN (SELECT course_id FROM course_prerequisites) " +
+                        "    OR EXISTS (" +
+                        "        SELECT 1 FROM course_prerequisites cp " +
+                        "        JOIN student_courses sc ON cp.prerequisite_id = sc.course_id " +
+                        "        WHERE cp.course_id = c.id " +
+                        "        AND sc.student_id = ? " +
+                        "        AND sc.grade >= 50" +
+                        "    )" +
+                        ")";
 
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            ResultSet rs = stmt.executeQuery(query);
+            pstmt.setString(1, id);
+            pstmt.setString(2, id);
+            pstmt.setString(3, id);
+
+            ResultSet rs = pstmt.executeQuery();
 
             int yPosition = 60;
             while (rs.next()) {
@@ -165,8 +167,6 @@ public class Student extends User {
             }
 
             rs.close();
-            stmt.close();
-            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -174,20 +174,28 @@ public class Student extends User {
         JButton saveButton = new JButton("Save");
         saveButton.setBounds(50, 400, 200, 30);
         saveButton.addActionListener(e -> {
-            try {
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                Statement stmt = conn.createStatement();
+
+            String insertQuery = "INSERT INTO student_courses (student_id, course_id, grade, status) VALUES (?, ?, ?, ?)";
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+                 PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
 
                 for (JCheckBox checkBox : checkboxes) {
                     if (checkBox.isSelected()) {
+
                         String[] parts = checkBox.getText().split(" - ");
                         String courseId = parts[0];
-                        String insertQuery = "INSERT INTO student_courses (student_id, course_id, status) VALUES ('" + id + "', '" + courseId + "', 'Registered')";
-                        stmt.executeUpdate(insertQuery);
+
+                        pstmt.setString(1, id);
+                        pstmt.setString(2, courseId);
+                        pstmt.setInt(3, 0);
+                        pstmt.setString(4, "Registered");
+
+                        pstmt.executeUpdate();
                     }
                 }
 
-                stmt.close();
+                pstmt.close();
                 conn.close();
                 JOptionPane.showMessageDialog(null, "Courses registered successfully!");
                 frame.dispose();
@@ -227,32 +235,32 @@ public class Student extends User {
 
         java.util.List<JCheckBox> checkboxes = new java.util.ArrayList<>();
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+            String query =
                     "SELECT c.id, c.course_name " +
                             "FROM courses c " +
                             "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                            "WHERE sc.student_id = '" + id + "' AND sc.status = 'Registered'"
-            );
+                            "WHERE sc.student_id = ? AND sc.status = 'Registered'";
 
-            int yPosition = 60;
-            while (rs.next()) {
-                String courseId = rs.getString("id");
-                String courseName = rs.getString("course_name");
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setString(1, id);
 
-                JCheckBox courseCheckBox = new JCheckBox(courseId + " - " + courseName, true);
-                courseCheckBox.setBounds(20, yPosition, 400, 25);
-                checkboxes.add(courseCheckBox);
-                frame.add(courseCheckBox);
+                ResultSet rs = pstmt.executeQuery();
 
-                yPosition += 30;
+                int yPosition = 60;
+                while (rs.next()) {
+                    String courseId = rs.getString("id");
+                    String courseName = rs.getString("course_name");
+
+                    JCheckBox courseCheckBox = new JCheckBox(courseId + " - " + courseName, true);
+                    courseCheckBox.setBounds(20, yPosition, 400, 25);
+                    checkboxes.add(courseCheckBox);
+                    frame.add(courseCheckBox);
+
+                    yPosition += 30;
+                }
+                rs.close();
             }
-
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -260,21 +268,23 @@ public class Student extends User {
         JButton saveButton = new JButton("Save");
         saveButton.setBounds(50, 400, 200, 30);
         saveButton.addActionListener(e -> {
-            try {
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-                Statement stmt = conn.createStatement();
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+                String deleteQuery = "DELETE FROM student_courses WHERE student_id = ? AND course_id = ?";
+                PreparedStatement pstmt = conn.prepareStatement(deleteQuery);
 
                 for (JCheckBox checkBox : checkboxes) {
                     if (!checkBox.isSelected()) {
                         String[] parts = checkBox.getText().split(" - ");
+
                         String courseId = parts[0];
-                        String deleteQuery = "DELETE FROM student_courses WHERE student_id='" + id + "' AND course_id='" + courseId + "'";
-                        stmt.executeUpdate(deleteQuery);
+
+                        pstmt.setString(1, id);
+                        pstmt.setString(2, courseId);
+
+                        pstmt.executeUpdate();
                     }
                 }
 
-                stmt.close();
-                conn.close();
                 JOptionPane.showMessageDialog(null, "Courses dropped successfully!");
                 frame.dispose();
             } catch (SQLException ex) {
@@ -295,39 +305,54 @@ public class Student extends User {
         titleLabel.setBounds(20, 20, 400, 25);
         frame.add(titleLabel);
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
-            String query = "SELECT c.id, c.course_name, c.description, c.credit_hours, c.schedule, sc.grade, sc.status " +
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
+            String query = "SELECT c.id, c.course_name, c.description, c.credit_hours, c.schedule, " +
+                    "sc.grade, sc.status " +
                     "FROM courses c " +
                     "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                    "WHERE sc.student_id = '" + id + "'";
-            ResultSet rs = stmt.executeQuery(query);
+                    "WHERE sc.student_id = ?";
 
-            int yPosition = 60;
-            while (rs.next()) {
-                String courseId = rs.getString("id");
-                String courseName = rs.getString("course_name");
-                String description = rs.getString("description");
-                String creditHours = rs.getString("credit_hours");
-                String schedule = rs.getString("schedule");
-                String grade = rs.getString("grade");
-                String status = rs.getString("status");
-                double grd = rs.getDouble("grade");
-                String courseInfo = "ID: " + courseId + ", Title: " + courseName + ", Credits: " + creditHours +
-                        ", Schedule: " + schedule + ", Grade: " + grade + " (" + convertToGrade(grd) + ")" +
-                        ", Status: " + status ;
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-                JLabel courseLabel = new JLabel(courseInfo);
-                courseLabel.setBounds(20, yPosition, 600, 25);
-                frame.add(courseLabel);
+                pstmt.setString(1, id);
+                ResultSet rs = pstmt.executeQuery();
 
-                yPosition += 30;
+                int yPosition = 60;
+
+                while (rs.next()) {
+                    String courseId = rs.getString("id");
+                    String courseName = rs.getString("course_name");
+                    String description = rs.getString("description");
+                    String creditHours = rs.getString("credit_hours");
+                    String schedule = rs.getString("schedule");
+                    String grade = rs.getString("grade");
+                    double numericGrade = 0;
+
+
+                    try {
+                        numericGrade = Double.parseDouble(grade);
+                    } catch (Exception ex) {
+                        numericGrade = 0;
+                    }
+
+                    String courseInfo = "ID: " + courseId +
+                            ", Title: " + courseName +
+                            ", Credits: " + creditHours +
+                            ", Schedule: " + schedule +
+                            ", Grade: " + grade + " (" + convertToGrade(numericGrade) + ")" +
+                            ", Status: " + rs.getString("status");
+
+                    JLabel courseLabel = new JLabel(courseInfo);
+                    courseLabel.setBounds(20, yPosition, 600, 25);
+                    frame.add(courseLabel);
+
+                    yPosition += 30;
+                }
+
+                rs.close();
             }
 
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -339,41 +364,55 @@ public class Student extends User {
     private void calculateGPA(String id) {
         frame = Frame.basicFrame("Your GPA", 400, 200, false);
 
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-            Statement stmt = conn.createStatement();
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+
             String query = "SELECT c.credit_hours, sc.grade " +
                     "FROM courses c " +
                     "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                    "WHERE sc.student_id = '" + id + "' AND sc.status = 'Completed'";
-            ResultSet rs = stmt.executeQuery(query);
+                    "WHERE sc.student_id = ? AND sc.status = 'Completed'";
 
-            double totalPoints = 0.0;
-            int totalCredits = 0;
-            while (rs.next()) {
-                if (rs.getDouble("grade") == 0.0)
-                    continue;
-                totalPoints += convertToPoints(rs.getDouble("grade")) * rs.getInt("credit_hours");
-                totalCredits += rs.getInt("credit_hours");
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+                pstmt.setString(1, id);
+                ResultSet rs = pstmt.executeQuery();
+
+                double totalPoints = 0.0;
+                int totalCredits = 0;
+
+                while (rs.next()) {
+
+                    String gradeStr = rs.getString("grade");
+                    double gradeValue = 0;
+
+
+                    try {
+                        gradeValue = Double.parseDouble(gradeStr);
+                    } catch (Exception ex) {
+                        gradeValue = 0;
+                    }
+
+                    if (gradeValue == 0.0)
+                        continue;
+
+                    int creditHours = rs.getInt("credit_hours");
+
+                    totalPoints += convertToPoints(gradeValue) * creditHours;
+                    totalCredits += creditHours;
+                }
+
+                double gpa = (totalCredits > 0) ? (totalPoints / totalCredits) : 0.0;
+
+                JLabel gpaLabel = new JLabel("Yours CGPA = " + String.format("%.2f", gpa));
+                gpaLabel.setBounds(20, 60, 200, 25);
+                frame.add(gpaLabel);
+
+                rs.close();
             }
 
-            double gpa = 0.0;
-
-            if (totalCredits > 0)
-                gpa = totalPoints / totalCredits;
-            else
-                gpa = 0.0;
-
-            JLabel gpaLabel = new JLabel("Yours CGPA = " + String.format("%.2f", gpa));
-            gpaLabel.setBounds(20, 60, 200, 25);
-            frame.add(gpaLabel);
-
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
 
         frame.setVisible(true);
     }
