@@ -98,3 +98,12 @@ CREATE TABLE student_course
     FOREIGN KEY (course_id) REFERENCES courses (id),
     CHECK (status IN ('Registered','Passed','Failed'))
 );
+
+CREATE TABLE system_permissions(
+    id INT NOT NULL,
+    allow_dropping INT NOT NULL,
+    allow_registering INT NOT NULL,
+    allow_updating_profile INT NOT NULL,
+    allow_login INT NOT NULL,
+    allow_reset INT NOT NULL
+)

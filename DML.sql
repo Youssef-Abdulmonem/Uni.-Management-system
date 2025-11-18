@@ -80,3 +80,6 @@ VALUES ('ST01', 'C01', 85, 'Passed'),
        ('ST07', 'C04', NULL, 'Registered'),
        ('ST08', 'C01', 78, 'Passed'),
        ('ST10', 'C05', 55, 'Passed');
+
+INSERT INTO system_permissions (id, allow_dropping, allow_registering, allow_upadting_profile, allow_login, allow_reset)
+VALUES (1,1,1,1,1,1);
