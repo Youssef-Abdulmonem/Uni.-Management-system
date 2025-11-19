@@ -85,7 +85,7 @@ public class LoginPage {
     }
 
     private int authenticate(String id, String pass) {
-        String[] tables = {"students", "faculties", "adminstaff", "systemAdmin"};
+        String[] tables = {"students", "faculties", "adminStaff", "systemAdmin"};
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
@@ -100,7 +100,7 @@ public class LoginPage {
 
                     try (ResultSet rs = pstmt.executeQuery()) {
                         if (rs.next()) {
-                            // Return code: 1=student, 2=faculty, 3=adminstaff, 4=systemAdmin
+                            // 1=student, 2=faculty, 3=adminstaff, 4=systemAdmin
                             return i + 1;
                         }
                     }
@@ -200,7 +200,7 @@ public class LoginPage {
     private int resetAuthenticate(String id, String email) {
         String url = "jdbc:sqlite:database.db";
 
-        String[] tables = {"students", "faculties", "adminstaff", "systemAdmin"};
+        String[] tables = {"students", "faculties", "adminStaff", "systemAdmin"};
 
         for (int i = 0; i < tables.length; i++) {
             String query = "SELECT * FROM " + tables[i] + " WHERE id=? AND email=?";

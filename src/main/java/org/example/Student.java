@@ -132,12 +132,12 @@ public class Student extends User {
                         "JOIN departments d ON cd.department_id = d.id " +
                         "JOIN students s ON s.department = d.name " +
                         "WHERE s.id = ? " +
-                        "AND c.id NOT IN (SELECT course_id FROM student_courses WHERE student_id = ?) " +
+                        "AND c.id NOT IN (SELECT course_id FROM student_course WHERE student_id = ?) " +
                         "AND (" +
-                        "    c.id NOT IN (SELECT course_id FROM course_prerequisites) " +
+                        "    c.id NOT IN (SELECT course_id FROM course_prerequisite) " +
                         "    OR EXISTS (" +
-                        "        SELECT 1 FROM course_prerequisites cp " +
-                        "        JOIN student_courses sc ON cp.prerequisite_id = sc.course_id " +
+                        "        SELECT 1 FROM course_prerequisite cp " +
+                        "        JOIN student_course sc ON cp.prerequisite_id = sc.course_id " +
                         "        WHERE cp.course_id = c.id " +
                         "        AND sc.student_id = ? " +
                         "        AND sc.grade >= 50" +
@@ -175,7 +175,7 @@ public class Student extends User {
         saveButton.setBounds(50, 400, 200, 30);
         saveButton.addActionListener(e -> {
 
-            String insertQuery = "INSERT INTO student_courses (student_id, course_id, grade, status) VALUES (?, ?, ?, ?)";
+            String insertQuery = "INSERT INTO student_course (student_id, course_id, grade, status) VALUES (?, ?, ?, ?)";
 
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
                  PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
@@ -239,7 +239,7 @@ public class Student extends User {
             String query =
                     "SELECT c.id, c.course_name " +
                             "FROM courses c " +
-                            "INNER JOIN student_courses sc ON c.id = sc.course_id " +
+                            "INNER JOIN student_course sc ON c.id = sc.course_id " +
                             "WHERE sc.student_id = ? AND sc.status = 'Registered'";
 
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -269,7 +269,7 @@ public class Student extends User {
         saveButton.setBounds(50, 400, 200, 30);
         saveButton.addActionListener(e -> {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
-                String deleteQuery = "DELETE FROM student_courses WHERE student_id = ? AND course_id = ?";
+                String deleteQuery = "DELETE FROM student_course WHERE student_id = ? AND course_id = ?";
                 PreparedStatement pstmt = conn.prepareStatement(deleteQuery);
 
                 for (JCheckBox checkBox : checkboxes) {
@@ -310,7 +310,7 @@ public class Student extends User {
             String query = "SELECT c.id, c.course_name, c.description, c.credit_hours, c.schedule, " +
                     "sc.grade, sc.status " +
                     "FROM courses c " +
-                    "INNER JOIN student_courses sc ON c.id = sc.course_id " +
+                    "INNER JOIN student_course sc ON c.id = sc.course_id " +
                     "WHERE sc.student_id = ?";
 
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -368,8 +368,8 @@ public class Student extends User {
 
             String query = "SELECT c.credit_hours, sc.grade " +
                     "FROM courses c " +
-                    "INNER JOIN student_courses sc ON c.id = sc.course_id " +
-                    "WHERE sc.student_id = ? AND sc.status = 'Completed'";
+                    "INNER JOIN student_course sc ON c.id = sc.course_id " +
+                    "WHERE sc.student_id = ? AND sc.grade IS NOT NULL";
 
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
 

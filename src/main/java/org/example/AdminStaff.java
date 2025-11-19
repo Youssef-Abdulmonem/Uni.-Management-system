@@ -101,16 +101,23 @@ public class AdminStaff extends User {
     }
     private void registerStudent(String adminId) {
         JFrame frame = Frame.basicFrame("Register Student", 400, 500, false);
+
         JLabel studentId = new JLabel("Student ID: ");
         JTextField sid = new JTextField();
+
         JLabel courseId = new JLabel("Course ID: ");
         JTextField cid = new JTextField();
+
         JButton saveButton = new JButton("Save");
+
         studentId.setBounds(30, 30, 120, 25);
         sid.setBounds(150, 30, 120, 25);
+
         courseId.setBounds(30, 70, 120, 25);
         cid.setBounds(150, 70, 120, 25);
+
         saveButton.setBounds(150, 320, 100, 30);
+
         frame.add(studentId);
         frame.add(sid);
         frame.add(courseId);
@@ -146,7 +153,7 @@ public class AdminStaff extends User {
                 }
 
                 // Check if already registered
-                String checkDuplicate = "SELECT student_id, course_id FROM student_courses WHERE student_id = ? AND course_id = ?";
+                String checkDuplicate = "SELECT student_id, course_id FROM student_course WHERE student_id = ? AND course_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkDuplicate)) {
                     ps.setString(1, student);
                     ps.setString(2, course);
@@ -158,7 +165,7 @@ public class AdminStaff extends User {
                 }
 
                 // prerequisites
-                String checkPrerequisites = "SELECT prerequisite_id FROM course_prerequisites WHERE course_id = ?";
+                String checkPrerequisites = "SELECT prerequisite_id FROM course_prerequisite WHERE course_id = ?";
                 try (PreparedStatement ps = conn.prepareStatement(checkPrerequisites)) {
                     ps.setString(1, course);
                     ResultSet rs = ps.executeQuery();
@@ -166,7 +173,7 @@ public class AdminStaff extends User {
                     while (rs.next()) {
                         String prerequisite = rs.getString("prerequisite_id");
 
-                        String checkPrereq = "SELECT status FROM student_courses WHERE student_id = ? AND course_id = ? AND status = 'Completed' AND grade >= 50";
+                        String checkPrereq = "SELECT status FROM student_course WHERE student_id = ? AND course_id = ? AND status = 'Completed' AND grade >= 50";
 
                         try (PreparedStatement ps2 = conn.prepareStatement(checkPrereq)) {
                             ps2.setString(1, student);
@@ -182,7 +189,7 @@ public class AdminStaff extends User {
                 }
 
                 // Register student
-                String insertQuery = "INSERT INTO student_courses (student_id, course_id, status) VALUES (?, ?, 'Registered')";
+                String insertQuery = "INSERT INTO student_course (student_id, course_id, status) VALUES (?, ?, 'Registered')";
                 try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
                     ps.setString(1, student);
                     ps.setString(2, course);
@@ -257,47 +264,41 @@ public class AdminStaff extends User {
             int maxNumber = 0;
             String newId = "";
 
-            try {
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
                 String selectQuery = "SELECT id FROM courses WHERE id LIKE 'C%'";
-                PreparedStatement psSelect = conn.prepareStatement(selectQuery);
-                ResultSet rs = psSelect.executeQuery();
+                try (PreparedStatement psSelect = conn.prepareStatement(selectQuery);
+                     ResultSet rs = psSelect.executeQuery()) {
 
-                while (rs.next()) {
-                    String existingId = rs.getString("id");
-                    int num = Integer.parseInt(existingId.substring(2));
-                    if (num > maxNumber) {
-                        maxNumber = num;
+                    while (rs.next()) {
+                        String existingId = rs.getString("id");
+                        int num = Integer.parseInt(existingId.substring(1)); // Use substring(1)
+                        if (num > maxNumber) {
+                            maxNumber = num;
+                        }
                     }
                 }
 
                 int newNumber = maxNumber + 1;
                 newId = String.format("C%02d", newNumber);
 
-                rs.close();
-                psSelect.close();
-                conn.close();
-
-                Connection con = DriverManager.getConnection("jdbc:sqlite:database.db");
-
                 String insertCourse = "INSERT INTO courses (id, course_name, description, credit_hours, schedule) VALUES (?, ?, ?, ?, ?)";
-                PreparedStatement psInsertCourse = con.prepareStatement(insertCourse);
-                psInsertCourse.setString(1, newId);
-                psInsertCourse.setString(2, name);
-                psInsertCourse.setString(3, description);
-                psInsertCourse.setString(4, credit);
-                psInsertCourse.setString(5, schedule);
-                psInsertCourse.executeUpdate();
-                psInsertCourse.close();
+                try (PreparedStatement psInsertCourse = conn.prepareStatement(insertCourse)) {
+                    psInsertCourse.setString(1, newId);
+                    psInsertCourse.setString(2, name);
+                    psInsertCourse.setString(3, description);
+                    psInsertCourse.setString(4, credit);
+                    psInsertCourse.setString(5, schedule);
+                    psInsertCourse.executeUpdate();
+                }
 
                 String insertDept = "INSERT INTO course_department (course_id, department_id, faculty_id) VALUES (?, ?, ?)";
-                PreparedStatement psDept = con.prepareStatement(insertDept);
-                psDept.setString(1, newId);
-                psDept.setString(2, department);
-                psDept.setString(3, faculty);
-                psDept.executeUpdate();
-                psDept.close();
+                try (PreparedStatement psDept = conn.prepareStatement(insertDept)) {
+                    psDept.setString(1, newId);
+                    psDept.setString(2, department);
+                    psDept.setString(3, faculty);
+                    psDept.executeUpdate();
+                }
 
                 JOptionPane.showMessageDialog(registerFrame, "Course Created with ID: " + newId);
                 registerFrame.dispose();
@@ -306,6 +307,7 @@ public class AdminStaff extends User {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(registerFrame, "Failed to create course.", "Error", JOptionPane.ERROR_MESSAGE);
             }
+
 
         });
 
@@ -391,27 +393,58 @@ public class AdminStaff extends User {
 
         int yPosition = 50;
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db");
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT sc.student_id, s.name AS student_name, sc.course_id, c.course_name AS course_name, sc.grade, sc.status " +
-                     "FROM student_courses sc " +
-                     "JOIN students s ON sc.student_id = s.id " +
-                     "JOIN courses c ON sc.course_id = c.id")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:database.db")) {
+            String facultyQuery = "SELECT faculty FROM adminStaff WHERE id = ?";
+            String adminFaculty = null;
 
-            while (rs.next()) {
-                String studentId = rs.getString("student_id");
-                String studentName = rs.getString("student_name");
-                String courseId = rs.getString("course_id");
-                String courseName = rs.getString("course_name");
-                String grade = rs.getString("grade");
-                String status = rs.getString("status");
+            try (PreparedStatement ps = conn.prepareStatement(facultyQuery)) {
+                ps.setString(1, this.id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        adminFaculty = rs.getString("faculty");
+                    }
+                }
+            }
 
-                String line = "Student ID: " + studentId + " ,Name: " + studentName + " ,Course ID: " + courseId + " ,Name: " + courseName + " ,Grade: " + grade + " ,Status: " + status;
-                JLabel dataLabel = new JLabel(line);
-                dataLabel.setBounds(20, yPosition, 700, 20);
-                reportFrame.add(dataLabel);
+            if (adminFaculty == null) {
+                JOptionPane.showMessageDialog(reportFrame, "Admin faculty not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-                yPosition += 30;
+            String sql = "SELECT sc.student_id, s.name AS student_name, sc.course_id, " +
+                    "c.course_name AS course_name, sc.grade, sc.status " +
+                    "FROM student_course sc " +
+                    "JOIN students s ON sc.student_id = s.id " +
+                    "JOIN courses c ON sc.course_id = c.id " +
+                    "WHERE s.faculty = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, adminFaculty);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    while (rs.next()) {
+                        String studentId = rs.getString("student_id");
+                        String studentName = rs.getString("student_name");
+                        String courseId = rs.getString("course_id");
+                        String courseName = rs.getString("course_name");
+                        String grade = rs.getString("grade");
+                        String status = rs.getString("status");
+
+                        String line = "Student ID: " + studentId +
+                                " ,Name: " + studentName +
+                                " ,Course ID: " + courseId +
+                                " ,Name: " + courseName +
+                                " ,Grade: " + grade +
+                                " ,Status: " + status;
+
+                        JLabel dataLabel = new JLabel(line);
+                        dataLabel.setBounds(20, yPosition, 760, 20);
+                        reportFrame.add(dataLabel);
+
+                        yPosition += 30;
+                    }
+                }
             }
 
         } catch (SQLException e) {
@@ -421,6 +454,7 @@ public class AdminStaff extends User {
 
         reportFrame.setVisible(true);
     }
+
 
 
 }

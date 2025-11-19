@@ -138,7 +138,7 @@ public class Faculty extends User {
 
                         try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
-                            String studentQuery = "SELECT student_id,status FROM student_courses WHERE course_id = ? AND status = 'Registered'";
+                            String studentQuery = "SELECT student_id,status FROM student_course WHERE course_id = ? AND status = 'Registered'";
                             PreparedStatement stm = con.prepareStatement(studentQuery);
                             stm.setString(1, finalCourseID);
                             ResultSet studentRs = stm.executeQuery();
@@ -167,7 +167,7 @@ public class Faculty extends User {
                                 gradesFrame.add(studentLabel);
 
                                 String grade = "";
-                                String gradeQuery = "SELECT grade FROM student_courses WHERE student_id = ? AND course_id = ?";
+                                String gradeQuery = "SELECT grade FROM student_course WHERE student_id = ? AND course_id = ?";
                                 try (Connection gradeConn = DriverManager.getConnection("jdbc:sqlite:database.db");
                                      PreparedStatement gradeStmt = gradeConn.prepareStatement(gradeQuery)) {
                                     gradeStmt.setString(1, studentId);
@@ -222,7 +222,7 @@ public class Faculty extends User {
                                             return;
                                         }
 
-                                        String updateQuery = "UPDATE student_courses SET grade = ? WHERE student_id = ? AND course_id = ?";
+                                        String updateQuery = "UPDATE student_course SET grade = ? WHERE student_id = ? AND course_id = ?";
                                         try (PreparedStatement updateStmt = saveConn.prepareStatement(updateQuery)) {
                                             updateStmt.setDouble(1, grade);
                                             updateStmt.setString(2, studentId);
@@ -232,7 +232,7 @@ public class Faculty extends User {
 
                                         JCheckBox completedCheckBox = completedCheckBoxes.get(i);
                                         if (completedCheckBox.isSelected()) {
-                                            String updateStatusQuery = "UPDATE student_courses SET status = 'Completed' WHERE student_id = ? AND course_id = ?";
+                                            String updateStatusQuery = "UPDATE student_course SET status = 'Completed' WHERE student_id = ? AND course_id = ?";
                                             try (PreparedStatement statusStmt = saveConn.prepareStatement(updateStatusQuery)) {
                                                 statusStmt.setString(1, studentId);
                                                 statusStmt.setString(2, finalCourseID);
@@ -682,7 +682,7 @@ public class Faculty extends User {
 
             try (Connection con = DriverManager.getConnection("jdbc:sqlite:database.db")) {
 
-                String role = "Doctor";
+                String role = "DR";
 
                 // Secure SELECT query
                 String query = "SELECT id, name, officeHours, department FROM adminstaff " +

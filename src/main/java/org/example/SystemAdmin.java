@@ -437,7 +437,7 @@ public class SystemAdmin extends User {
 
             switch (label.toLowerCase()) {
                 case "email":
-                    if (value.startsWith("@") || (!value.endsWith("@gmail.com") && !value.contains("@yahoo.com") && !value.contains("@alexu.edu"))) {
+                    if (value.startsWith("@") || (!value.endsWith("@gmail.com") && !value.contains("@yahoo.com") && !value.contains("@alexu.edu") && !value.contains("@univ.edu"))) {
                         JOptionPane.showMessageDialog(null, "Email must be a valid gmail, yahoo or alexu.edu email!");
                         return false;
                     }
@@ -479,9 +479,9 @@ public class SystemAdmin extends User {
                     break;
 
                 case "role":
-                    if(!value.equalsIgnoreCase("TA") && !value.equalsIgnoreCase("Doctor"))
+                    if(!value.equalsIgnoreCase("TA") && !value.equalsIgnoreCase("Dr"))
                     {
-                        JOptionPane.showMessageDialog(null, "Role must be TA or Doctor!");
+                        JOptionPane.showMessageDialog(null, "Role must be TA or Dr!");
                         return false;
                     }
                     break;
